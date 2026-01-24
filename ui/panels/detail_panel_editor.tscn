@@ -1,7 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://c3qaqw6c26p23"]
+[gd_scene load_steps=10 format=3 uid="uid://c3qaqw6c26p23"]
 
 [ext_resource type="PackedScene" uid="uid://uhe6twg0cfbr" path="res://ui/difficulty_icon.tscn" id="2_4axvd"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="3_aumbu"]
+[ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="8_vrpj3"]
+[ext_resource type="Texture2D" uid="uid://d3u2wvjog1sw1" path="res://graphics/ui/8px/simple/upload.png" id="9_jxlfc"]
 [ext_resource type="Texture2D" uid="uid://c32bmlfjsmevq" path="res://graphics/ui/16px/edit.png" id="9_vrpj3"]
 [ext_resource type="Texture2D" uid="uid://dnvok24qr3aa" path="res://graphics/ui/16px/file_remove.png" id="10_77xe4"]
 [ext_resource type="Texture2D" uid="uid://deg4gonuf6bnk" path="res://graphics/ui/8px/simple/check.png" id="10_jxlfc"]
@@ -104,3 +106,11 @@ theme = ExtResource("3_aumbu")
 text = "unverified"
 vertical_alignment = 1
 clip_text = true
+
+[node name="UploadButton" parent="." instance=ExtResource("8_vrpj3")]
+layout_mode = 0
+offset_left = 69.0
+offset_top = 56.0
+offset_right = 85.0
+offset_bottom = 72.0
+icon_texture = ExtResource("9_jxlfc")

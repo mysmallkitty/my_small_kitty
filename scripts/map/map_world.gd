@@ -6,9 +6,9 @@ extends Node2D
 @export var camera_zoom := Vector2(1, 1)
 @export var camera_transition_time := 0.25
 @export var debug_draw_chunks := false
-@export var death_fade_time := 0.1
-@export var death_fade_hold := 0.05
-@export var death_fade_delay := 1.0
+@export var death_fade_time := 0.2
+@export var death_fade_hold := 0.2
+@export var death_fade_delay := 0.7
 
 var map_data: MapData
 var current_chunk: ChunkData
@@ -31,6 +31,9 @@ var _pending_chunk_id := ""
 var _camera_transition_left := 0.0
 var _camera_transition_from := Vector2.ZERO
 var _respawning := false
+
+var _total_death = 0
+var _playtime = 0
 
 var _death_streams: Array[AudioStream] = [
 	preload("res://audio/player/cat_cry0.wav"),

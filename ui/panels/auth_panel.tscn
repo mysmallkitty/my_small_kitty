@@ -1,8 +1,9 @@
-[gd_scene load_steps=8 format=3 uid="uid://dl7caoqabrnib"]
+[gd_scene load_steps=9 format=3 uid="uid://dl7caoqabrnib"]
 
 [ext_resource type="Script" uid="uid://dpsjaw0v6yn87" path="res://scripts/ui/auth_panel.gd" id="1_auth"]
 [ext_resource type="Texture2D" uid="uid://cvsm2biosg2mh" path="res://graphics/ui/8px/simple/user.png" id="2_jwa1k"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="3_wurpa"]
+[ext_resource type="Script" uid="uid://csfgtixb47vkv" path="res://lineedit_regex.gd" id="4_de28o"]
 [ext_resource type="Texture2D" uid="uid://c7p24u3n2jdt3" path="res://graphics/ui/8px/simple/password.png" id="4_jae6r"]
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="5_3trto"]
 [ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="5_fwxhu"]
@@ -41,9 +42,10 @@ offset_bottom = 35.0
 theme = ExtResource("3_wurpa")
 placeholder_text = "username"
 alignment = 1
-max_length = 10
+max_length = 15
 context_menu_enabled = false
 emoji_menu_enabled = false
+script = ExtResource("4_de28o")
 
 [node name="Password_Icon" type="Sprite2D" parent="Login"]
 position = Vector2(12, 47)
@@ -58,7 +60,7 @@ offset_bottom = 51.0
 theme = ExtResource("3_wurpa")
 placeholder_text = "password"
 alignment = 1
-max_length = 14
+max_length = 30
 context_menu_enabled = false
 emoji_menu_enabled = false
 virtual_keyboard_type = 6
@@ -131,9 +133,10 @@ offset_bottom = 35.0
 theme = ExtResource("3_wurpa")
 placeholder_text = "username"
 alignment = 1
-max_length = 10
+max_length = 15
 context_menu_enabled = false
 emoji_menu_enabled = false
+script = ExtResource("4_de28o")
 
 [node name="Password_Icon" type="Sprite2D" parent="RegisterPanel"]
 position = Vector2(12, 54)

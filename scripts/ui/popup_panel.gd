@@ -4,7 +4,7 @@ extends Control
 @export var dim_path: NodePath
 @export var slide_dir := Vector2(0, -1)
 @export var slide_margin := 8.0
-@export var anim_time := 0.15
+@export var anim_time := 0.3
 
 var _base_pos := Vector2.ZERO
 var _dim: CanvasItem

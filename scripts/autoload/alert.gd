@@ -5,8 +5,8 @@ extends CanvasLayer
 @export var warning_texture: Texture2D = preload("res://graphics/ui/panels/alert/warning.png")
 @export var margin := Vector2(8, 8)
 @export var spacing := 2.0
-@export var enter_time := 0.12
-@export var exit_time := 0.12
+@export var enter_time := 0.3
+@export var exit_time := 0.3
 @export var hold_time := 2.0
 @export var slide_in_offset := 12.0
 

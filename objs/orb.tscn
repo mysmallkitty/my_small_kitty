@@ -1,0 +1,32 @@
+[gd_scene load_steps=4 format=3 uid="uid://46lufclkxd0k"]
+
+[ext_resource type="Texture2D" uid="uid://cjfny3qxnnq4x" path="res://graphics/objects/orb.png" id="1_24fh1"]
+
+[sub_resource type="Gradient" id="Gradient_24fh1"]
+offsets = PackedFloat32Array(0.65273315, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_24fh1"]
+atlas = ExtResource("1_24fh1")
+region = Rect2(0, 0, 8, 48)
+
+[node name="JumpOrb" type="Node2D"]
+
+[node name="CPUParticles2D" type="CPUParticles2D" parent="."]
+position = Vector2(4, 4)
+lifetime = 0.15000000000000002
+preprocess = 1.63
+speed_scale = 0.1
+randomness = 0.25
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 33.52
+initial_velocity_max = 72.62
+color = Color(0.8980392, 0.8784314, 0.49411765, 1)
+color_ramp = SubResource("Gradient_24fh1")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 1
+position = Vector2(4, 4)
+texture = SubResource("AtlasTexture_24fh1")
+vframes = 6

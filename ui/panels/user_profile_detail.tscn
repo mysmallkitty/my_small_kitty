@@ -2,8 +2,8 @@
 
 [ext_resource type="Script" uid="uid://cgy33tbyoje6b" path="res://scripts/ui/user_profile_detail.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_uavsx"]
-[ext_resource type="Texture2D" uid="uid://bnqqrpyxfv3ug" path="res://graphics/ui/flags/mx.png" id="2_65g8n"]
 [ext_resource type="Texture2D" uid="uid://dwlfytf3pw08i" path="res://graphics/ui/8px/play.png" id="3_hxnar"]
+[ext_resource type="Texture2D" uid="uid://cvnwpmqvmlfdp" path="res://graphics/ui/flags/unkown.png" id="3_uavsx"]
 [ext_resource type="Texture2D" uid="uid://ctd672p5crq2a" path="res://graphics/ui/8px/flag.png" id="4_ac3mq"]
 [ext_resource type="Texture2D" uid="uid://b4v5ol2j3hr8o" path="res://graphics/ui/8px/death.png" id="5_0iowf"]
 [ext_resource type="Texture2D" uid="uid://dk1kne37x0h03" path="res://graphics/ui/8px/calander.png" id="6_xe8ob"]
@@ -28,21 +28,20 @@ theme = ExtResource("1_uavsx")
 [node name="CountryFlag" type="TextureRect" parent="."]
 layout_mode = 0
 offset_left = 9.0
-offset_top = 11.0
+offset_top = 8.0
 offset_right = 24.0
-offset_bottom = 21.0
-scale = Vector2(0.5, 0.5)
-texture = ExtResource("2_65g8n")
+offset_bottom = 18.0
+texture = ExtResource("3_uavsx")
 expand_mode = 1
 
 [node name="Username" type="Label" parent="."]
 layout_mode = 0
-offset_left = 18.0
+offset_left = 27.0
 offset_top = 10.0
-offset_right = 113.0
+offset_right = 122.0
 offset_bottom = 17.0
 theme_override_font_sizes/font_size = 7
-text = "abcd"
+text = "player"
 clip_text = true
 
 [node name="Rank" type="Label" parent="."]
@@ -52,7 +51,7 @@ offset_top = 20.0
 offset_right = 121.0
 offset_bottom = 27.0
 theme_override_font_sizes/font_size = 7
-text = "#9999"
+text = "#0"
 clip_text = true
 
 [node name="Play" type="Sprite2D" parent="."]
@@ -66,7 +65,7 @@ offset_top = 41.0
 offset_right = 73.0
 offset_bottom = 48.0
 theme_override_font_sizes/font_size = 7
-text = "12312"
+text = "0"
 clip_text = true
 
 [node name="ClearedCount" type="Label" parent="."]
@@ -76,7 +75,7 @@ offset_top = 53.0
 offset_right = 73.0
 offset_bottom = 60.0
 theme_override_font_sizes/font_size = 7
-text = "123123"
+text = "0"
 clip_text = true
 
 [node name="DeathCount" type="Label" parent="."]
@@ -86,7 +85,7 @@ offset_top = 65.0
 offset_right = 73.0
 offset_bottom = 72.0
 theme_override_font_sizes/font_size = 7
-text = "123213"
+text = "0"
 clip_text = true
 
 [node name="JoinDate" type="Label" parent="."]
@@ -96,7 +95,7 @@ offset_top = 41.0
 offset_right = 136.0
 offset_bottom = 48.0
 theme_override_font_sizes/font_size = 7
-text = "2026-10-31"
+text = "2000-01-01"
 clip_text = true
 
 [node name="Flag" type="Sprite2D" parent="."]

@@ -6,7 +6,7 @@ signal pressed(item: MapRow)
 @export var normal_offset_x := 36.0
 @export var hover_offset_x := 32.0
 @export var selected_offset_x := 0.0
-@export var move_step := 0.1
+@export var move_step := 10.0
 
 var data: Dictionary = {}
 var base_pos := Vector2.ZERO

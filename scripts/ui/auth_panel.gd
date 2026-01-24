@@ -21,7 +21,6 @@ func _ready() -> void:
 	_bind_ui()
 	_connect_buttons()
 	_show_login_panel()
-	call_deferred("_check_server_health")
 
 func open_login() -> void:
 	_show_login_panel()
@@ -117,17 +116,6 @@ func _on_register_submit() -> void:
 		login_user.text = username
 	if login_pass != null:
 		login_pass.text = ""
-
-func _check_server_health() -> void:
-	var result: Dictionary = await AuthService.check_health()
-	if not result.get("ok", false):
-		Alert.push("can't connect to server", true)
-		return
-	var data = result.get("data", null)
-	if typeof(data) == TYPE_DICTIONARY:
-		var status := str(data.get("status", ""))
-		if status != "ok":
-			Alert.push("server status: %s" % status, true)
 
 func _find_button(path: String, _name: String) -> BaseButton:
 	var node := get_node_or_null(path)

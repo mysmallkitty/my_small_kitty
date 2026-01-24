@@ -1,39 +1,32 @@
 class_name UserProfileDetail
 extends SlidePopup
 
-var username_label: Label
-var rank_label: Label
-var play_label: Label
-var clear_label: Label
-var death_label: Label
-var created_label: Label
-var level_label: Label
-var close_button: BaseButton
+var user_id = -1
+
+@onready var username_label = $Username
+@onready var rank_label = $Rank
+@onready var 	play_label = $PlayCount
+@onready var 	clear_label = $ClearedCount
+@onready var 	death_label = $DeathCount
+@onready var 	created_label = $JoinDate
+@onready var 	level_label = $LevelCreated
+@onready var 	close_button = $CloseButton
+@onready var 	country_label = $CountryFlag
 
 func _ready() -> void:
 	super()
 	add_to_group("user_profile_panels")
-	_bind_ui()
 	_connect_buttons()
 	refresh_from_api()
 
 func open_with_me(me: Dictionary) -> void:
-	_apply_me(me)
+	_apply_user(me)
 	show_popup()
 
 func refresh_from_api() -> void:
 	var me := _get_me_data()
-	_apply_me(me)
+	_apply_user(me)
 
-func _bind_ui() -> void:
-	username_label = get_node_or_null("Username") as Label
-	rank_label = get_node_or_null("Rank") as Label
-	play_label = get_node_or_null("PlayCount") as Label
-	clear_label = get_node_or_null("ClearedCount") as Label
-	death_label = get_node_or_null("DeathCount") as Label
-	created_label = get_node_or_null("JoinDate") as Label
-	level_label = get_node_or_null("LevelCreated") as Label
-	close_button = get_node_or_null("CloseButton") as BaseButton
 
 func _connect_buttons() -> void:
 	if close_button != null and not close_button.pressed.is_connected(_on_close_pressed):
@@ -42,36 +35,16 @@ func _connect_buttons() -> void:
 func _on_close_pressed() -> void:
 	hide_popup()
 
-func _apply_me(me: Dictionary) -> void:
-	if me.is_empty():
-		if username_label != null:
-			username_label.text = "guest"
-		if rank_label != null:
-			rank_label.text = "#--"
-		if play_label != null:
-			play_label.text = "0"
-		if clear_label != null:
-			clear_label.text = "0"
-		if death_label != null:
-			death_label.text = "0"
-		if created_label != null:
-			created_label.text = "--"
-		if level_label != null:
-			level_label.text = "0"
-		return
-	if username_label != null:
-		username_label.text = str(me.get("username", "guest")) + " (" + str(int(me.get("level", 1))) + ")"
-	if rank_label != null:
-		var rank = me.get("rank", null)
+func _apply_user(user: Dictionary) -> void:
+	if not user.is_empty():
+		username_label.text = str(user.get("username", "guest")) + " (" + str(int(user.get("level", 0))) + ")"
+		var rank = user.get("rank", null)
 		rank_label.text = "#%s" % str(int(rank)) if rank != null else "#--"
-	if play_label != null:
-		play_label.text = str(int(me.get("total_attempts", 0)))
-	if clear_label != null:
-		clear_label.text = str(int(me.get("total_clears", 0)))
-	if death_label != null:
-		death_label.text = str(int(me.get("total_deaths", 0)))
-	if created_label != null:
-		created_label.text = _format_date(str(me.get("created_at", "")))
+		play_label.text = str(int(user.get("total_attempts", 0)))
+		clear_label.text = str(int(user.get("total_clears", 0)))
+		death_label.text = str(int(user.get("total_deaths", 0)))
+		created_label.text = _format_date(str(user.get("created_at", "")))
+		country_label.texture = get_flag_png(user.get("country","unknown"))
 
 func _format_date(value: String) -> String:
 	if value == "":
@@ -80,6 +53,13 @@ func _format_date(value: String) -> String:
 	if parts.size() > 0 and parts[0] != "":
 		return parts[0]
 	return value
+
+func get_flag_png(code: String) -> Texture:
+	var path := "res://graphics/ui/flags".path_join(code + ".png")
+	if FileAccess.file_exists(path):
+		var t = load(path)
+		return t
+	return load("res://graphics/ui/flags/unkown.png")
 
 func _get_me_data() -> Dictionary:
 	var me = ApiClient.me

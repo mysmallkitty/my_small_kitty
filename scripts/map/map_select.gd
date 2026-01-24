@@ -2,7 +2,7 @@ extends Node2D
 
 @export var mode := "play" # "play" or "editor"
 @export var map_item_scene: PackedScene = preload("res://ui/panels/map_row.tscn")
-@export var row_height := 24.0
+@export var row_height := 26.0
 @export var scroll_step := 12.0
 @export var scroll_anim_step := 1.0
 @export var page_size := 20
@@ -70,6 +70,7 @@ func _ready() -> void:
 	_setup_profile_click()
 	_refresh_list()
 	set_process(true)
+	_update_detail_panel()
 
 func _process(_delta: float) -> void:
 	if abs(_scroll_offset - _scroll_target) < 0.01:
@@ -360,6 +361,8 @@ func _on_item_pressed(item: MapRow) -> void:
 	_request_preview_for_selected()
 
 func _update_detail_panel() -> void:
+	if detail_panel != null:
+		detail_panel.visible = _selected_index >= 0 and _selected_index < _items.size()
 	if _selected_index < 0 or _selected_index >= _items.size():
 		return
 	var entry: Dictionary = _items[_selected_index].data

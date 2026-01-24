@@ -14,6 +14,7 @@ var sfx_volume := 1.0
 
 func _ready() -> void:
 	_apply_audio()
+	Engine.max_fps = 60
 
 func ensure_dirs() -> void:
 	DirAccess.make_dir_recursive_absolute(WIP_DIR)

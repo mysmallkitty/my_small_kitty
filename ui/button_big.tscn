@@ -1,9 +1,10 @@
-[gd_scene load_steps=5 format=3 uid="uid://dli2pb8ippthn"]
+[gd_scene load_steps=6 format=3 uid="uid://dli2pb8ippthn"]
 
 [ext_resource type="Script" uid="uid://fvm7qedn02so" path="res://scripts/ui/icon_button.gd" id="1_icon_btn"]
 [ext_resource type="Texture2D" uid="uid://c8ma2l3daybh5" path="res://graphics/ui/buttons/button_normal.png" id="1_tpqli"]
 [ext_resource type="Texture2D" uid="uid://csoijbaa4qfru" path="res://graphics/ui/buttons/button_pressed.png" id="2_56vl5"]
 [ext_resource type="Texture2D" uid="uid://35o5x26r4r8r" path="res://graphics/ui/buttons/button_hover.png" id="3_1cxr7"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="5_1cxr7"]
 
 [node name="IconButton" type="TextureButton"]
 texture_filter = 1
@@ -15,8 +16,8 @@ anchor_right = 0.037
 anchor_bottom = 0.133
 offset_left = -11.84
 offset_top = -23.94
-offset_right = -11.84
-offset_bottom = -23.94
+offset_right = 12.16
+offset_bottom = 0.059999466
 size_flags_horizontal = 0
 size_flags_vertical = 0
 focus_mode = 0
@@ -27,6 +28,7 @@ texture_disabled = ExtResource("2_56vl5")
 texture_focused = ExtResource("3_1cxr7")
 stretch_mode = 3
 script = ExtResource("1_icon_btn")
+click_sound = ExtResource("5_1cxr7")
 
 [node name="Icon" type="TextureRect" parent="."]
 texture_filter = 1

@@ -1,4 +1,4 @@
-[gd_scene load_steps=19 format=3 uid="uid://p5b6ihjcngrx"]
+[gd_scene load_steps=20 format=3 uid="uid://p5b6ihjcngrx"]
 
 [ext_resource type="Script" uid="uid://bfd13jq44qcia" path="res://scripts/map/editor/map_editor.gd" id="1_rifoq"]
 [ext_resource type="Script" uid="uid://y3jkwl670psv" path="res://scripts/map/editor/map_renderer.gd" id="2_hamae"]
@@ -17,6 +17,7 @@
 [ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="15_fcxql"]
 [ext_resource type="Texture2D" uid="uid://c824e25wk1lcc" path="res://graphics/ui/8px/simple/menu.png" id="16_amvjq"]
 [ext_resource type="Texture2D" uid="uid://dpljqlmuqxyjk" path="res://graphics/ui/8px/save.png" id="17_njwoh"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="17_scnpi"]
 [ext_resource type="PackedScene" uid="uid://c4s5f70rcr3dw" path="res://ui/panels/editor_menu.tscn" id="18_editor_menu"]
 
 [node name="MapEditor" type="Node2D"]
@@ -162,6 +163,7 @@ offset_top = 8.0
 offset_right = 312.0
 offset_bottom = 24.0
 icon_texture = ExtResource("16_amvjq")
+click_sound = ExtResource("17_scnpi")
 
 [node name="SaveButton" parent="UI/Hud" instance=ExtResource("15_fcxql")]
 unique_name_in_owner = true
@@ -171,6 +173,7 @@ offset_top = 8.0
 offset_right = 292.0
 offset_bottom = 24.0
 icon_texture = ExtResource("17_njwoh")
+click_sound = ExtResource("17_scnpi")
 
 [node name="Dim" type="ColorRect" parent="UI"]
 visible = false

@@ -1,13 +1,9 @@
-[gd_scene load_steps=3 format=3 uid="uid://dxxb3wsqg450l"]
+[gd_scene load_steps=2 format=3 uid="uid://dxxb3wsqg450l"]
 
-[ext_resource type="Texture2D" uid="uid://bjyqh1ftfpewk" path="res://graphics/tiles/blocks.png" id="1_fh8ib"]
-
-[sub_resource type="AtlasTexture" id="AtlasTexture_jof7b"]
-atlas = ExtResource("1_fh8ib")
-region = Rect2(16, 8, 16, 16)
+[ext_resource type="Texture2D" uid="uid://bt8t6q18ldvbe" path="res://graphics/objects/startpoint.png" id="1_0dl1d"]
 
 [node name="Spawnpoint" type="Node2D"]
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(8, 8)
-texture = SubResource("AtlasTexture_jof7b")
+texture = ExtResource("1_0dl1d")

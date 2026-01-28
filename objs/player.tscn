@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3 uid="uid://dde7gq26rh23n"]
+[gd_scene load_steps=8 format=3 uid="uid://dde7gq26rh23n"]
 
 [ext_resource type="Script" uid="uid://bfkedsayxjpvb" path="res://scripts/scene/player.gd" id="1_1wmc1"]
 [ext_resource type="Texture2D" uid="uid://b5sd6kgftyqf3" path="res://graphics/kitty.png" id="2_glhse"]
@@ -11,10 +11,18 @@ size = Vector2(6, 8)
 offsets = PackedFloat32Array(0.6559486, 1)
 colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
 
+[sub_resource type="Curve" id="Curve_e0qph"]
+_limits = [-200.0, 200.0, 0.0, 1.0]
+_data = [Vector2(0, 200), 0.0, 0.0, 0, 0, Vector2(0.6693332, -200), -639.50195, 0.0, 0, 0]
+point_count = 2
+
 [sub_resource type="Gradient" id="Gradient_e0qph"]
 colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
 
 [node name="Player" type="CharacterBody2D" node_paths=PackedStringArray("collision_shape")]
+position = Vector2(5, 4)
+collision_layer = 5
+collision_mask = 4
 script = ExtResource("1_1wmc1")
 move_speed = 60.0
 jump_speed = 120.0
@@ -25,7 +33,7 @@ dash_post_jump_window_frames_at_60 = 3
 collision_shape = NodePath("CollisionShape2D")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(-0.5, 2)
+position = Vector2(0, 2)
 scale = Vector2(0.5, 0.5)
 shape = SubResource("RectangleShape2D_glhse")
 
@@ -48,13 +56,15 @@ color_ramp = SubResource("Gradient_a3i47")
 [node name="DeathPixels" type="CPUParticles2D" parent="."]
 z_index = 21
 emitting = false
-amount = 30
-lifetime = 0.5
+amount = 100
+lifetime = 1.5
 one_shot = true
 explosiveness = 1.0
 spread = 180.0
 gravity = Vector2(0, 100)
-initial_velocity_min = 19.51
+initial_velocity_min = 34.66
 initial_velocity_max = 67.66
+linear_accel_max = 3.0
+linear_accel_curve = SubResource("Curve_e0qph")
 color = Color(1, 0, 0, 1)
 color_ramp = SubResource("Gradient_e0qph")

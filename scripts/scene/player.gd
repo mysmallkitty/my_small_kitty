@@ -5,12 +5,14 @@ extends CharacterBody2D
 @export var jump_speed := 130.0
 @export var gravity := 340.0
 @export var coyote_time := 0.12
-@export var jump_buffer := 0.12
+@export var jump_buffer := 10.0
 
 @export var dash_speed := 120.0
 @export var dash_time := 0.25
 @export var dash_gravity_scale := 0
 @export var dash_lift_accel := 0
+@export var wall_climb_speed := 50.0
+@export var wall_slide_gravity_mult := 0.5
 
 @export var ground_accel := 2000.0
 @export var air_accel := 900.0
@@ -28,15 +30,17 @@ signal signal_damaged
 signal signal_grounded
 signal signal_respawn
 
+var _dash_vel: Vector2
 var _vel: Vector2
 var _on_floor_timer := 0.0
 var _jump_buffer_timer := 0.0
 var _has_air_jump := true
+var _is_wall_climbing = false
+var _wall_climb_timer := 0.0
 
 var _is_dashing := false
 var _dash_timer := 0.0
-var _dash_momentum: Vector2 = Vector2.ZERO
-var _can_dash := false
+var _has_dash := false
 var dir_look := 1.0
 
 # 대시 종료 후 점프 부스트 윈도우
@@ -53,6 +57,7 @@ var _death_pixels: CPUParticles2D
 
 @export var collision_shape: CollisionShape2D
 @export var hazard_mask: int = 1 << 1
+@export var object_mask: int = 3 << 3
 
 func _dash_post_jump_window_sec() -> float:
 	return float(dash_post_jump_window_frames_at_60) / 60.0
@@ -67,6 +72,23 @@ func _is_overlapping_hazard() -> bool:
 	params.shape = collision_shape.shape
 	params.transform = collision_shape.global_transform
 	params.collision_mask = hazard_mask
+	params.collide_with_bodies = true
+	params.collide_with_areas = true
+	params.exclude = [self]
+
+	var hits := space_state.intersect_shape(params, 1)
+	return hits.size() > 0
+
+func _is_overlapping_object() -> bool:
+	if collision_shape == null or collision_shape.shape == null:
+		return false
+
+	var space_state := get_world_2d().direct_space_state
+
+	var params := PhysicsShapeQueryParameters2D.new()
+	params.shape = collision_shape.shape
+	params.transform = collision_shape.global_transform
+	params.collision_mask = object_mask
 	params.collide_with_bodies = true
 	params.collide_with_areas = true
 	params.exclude = [self]
@@ -120,8 +142,7 @@ func _respawn() -> void:
 
 	_is_dashing = false
 	_dash_timer = 0.0
-	_dash_momentum = Vector2.ZERO
-	_can_dash = false
+	_has_dash = false
 	dir_look = 1.0
 
 	_post_dash_jump_timer = 0.0
@@ -136,9 +157,9 @@ func _input(event):
 	if event.is_action_pressed("player_jump"):
 		_jump_buffer_timer = jump_buffer
 
-	if event.is_action_pressed("player_dash") and (not _is_dashing) and _can_dash:
+	if event.is_action_pressed("player_dash") and (not _is_dashing) and _has_dash:
 		_start_dash()
-		_can_dash = false
+		_has_dash = false
 
 func _unhandled_input(event):
 	if editor_mode:
@@ -173,13 +194,19 @@ func _physics_process(delta):
 		_die()
 
 func _handle_timers(delta: float) -> void:
+
 	if is_on_floor():
 		signal_grounded.emit()
-		_can_dash = true
+		_has_dash = true
 		_on_floor_timer = coyote_time
 		_has_air_jump = true
 	else:
 		_on_floor_timer = max(0.0, _on_floor_timer - delta)
+	
+	if is_on_wall():
+		var dir = Input.get_action_strength("player_right") - Input.get_action_strength("player_left")
+		if abs(dir) > 0:
+			pass
 
 	_jump_buffer_timer = max(0.0, _jump_buffer_timer - delta)
 
@@ -225,28 +252,26 @@ func _start_dash() -> void:
 	_is_dashing = true
 	_dash_timer = dash_time
 
-	_vel = Vector2(dash_speed * dir_look, 0.0)
-	velocity = _vel
+	_dash_vel = Vector2(dash_speed * dir_look, 0.0)
 
 	_post_dash_jump_timer = 0.0
 
 	_play_dash_sfx()
 
 func _dash_step(delta: float) -> void:
-	_vel.x = dash_speed * dir_look
-	_vel.y += (gravity * dash_gravity_scale - dash_lift_accel) * delta
+	_dash_vel.x = dash_speed * dir_look
+	_dash_vel.y += (gravity * dash_gravity_scale - dash_lift_accel) * delta
 
 func _end_dash(start_post_window: bool) -> void:
 	_is_dashing = false
 	_dash_timer = 0.0
-	_dash_momentum = _vel
 
 	if start_post_window:
 		_post_dash_jump_timer = _dash_post_jump_window_sec()
 		_post_dash_dir = dir_look
 
 func _jump(is_air_jump: bool) -> void:
-	if _post_dash_jump_timer > 0.0: # do hyper jump
+	if _post_dash_jump_timer > 0.0 && (Input.get_action_strength("player_right") - Input.get_action_strength("player_left") != 0): # do hyper jump
 		_post_dash_jump_timer = 0.0
 		var boosted_x := (dash_speed * dash_jump_boost_mult) + dash_jump_boost_add
 		_vel.x = boosted_x * _post_dash_dir
@@ -264,7 +289,10 @@ func _jump(is_air_jump: bool) -> void:
 	
 
 func _apply_move() -> void:
-	velocity = _vel
+	if _is_dashing:
+		velocity = _dash_vel
+	else:
+		velocity = _vel
 	move_and_slide()
 	_vel = velocity
 

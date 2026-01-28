@@ -398,10 +398,10 @@ func _append_palette_scenes(out: Array[Dictionary], prefix: String) -> void:
 			if scene_path == "" or added_paths.has(scene_path):
 				continue
 			var placeholder: Texture2D = null
-			if scene_source.has_method("get_scene_tile_display_placeholder"):
-				var raw_placeholder = scene_source.get_scene_tile_display_placeholder(tile_id)
-				if raw_placeholder is Texture2D:
-					placeholder = raw_placeholder
+			if packed:
+				var raw_placeholder = packed.instantiate()
+				if raw_placeholder.icon is Texture2D:
+					placeholder = raw_placeholder.icon
 			var button := _make_scene_button(scene_path, placeholder)
 			button.pressed.connect(_on_scene_button_pressed.bind(scene_path))
 			out.append({
@@ -515,6 +515,7 @@ func _make_scene_button(scene_path: String, icon: Texture2D) -> BaseButton:
 		icon_rect.custom_minimum_size = size
 		icon_rect.size = size
 		if icon != null:
+			print("hello")
 			pass
 	button.tooltip_text = scene_path.get_file()
 	return button

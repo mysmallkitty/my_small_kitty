@@ -7,6 +7,7 @@ extends TextureButton
 		icon_texture = value
 		_apply_icon()
 
+@export var click_sound: AudioStreamWAV = load("res://audio/click.wav")
 @export var icon_modulate_normal := Color(1, 1, 1, 1)
 @export var icon_modulate_hover := Color(1.08, 1.08, 1.08, 1)
 @export var icon_modulate_pressed := Color(0.8, 0.8, 0.8, 1)
@@ -15,16 +16,23 @@ extends TextureButton
 
 var _base_position := Vector2.ZERO
 var _last_state := ""
+var audio_stream := AudioStreamPlayer.new()
 
 @onready var _icon: TextureRect = get_node_or_null("Icon")
 
 func _ready() -> void:
 	focus_mode = Control.FOCUS_NONE
+	audio_stream.stream = click_sound
 	_base_position = position
 	set_process(true)
 	_apply_icon()
 	_apply_state(_get_state())
+	pressed.connect(_pressed)
+	
 
+func _pressed() -> void:
+	audio_stream.play()
+	
 func _process(_delta: float) -> void:
 	var state := _get_state()
 	if state != _last_state:

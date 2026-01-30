@@ -20,6 +20,7 @@ func _ready() -> void:
 	super()
 	_bind_ui()
 	_connect_buttons()
+	_connect_auth_state()
 	_show_login_panel()
 
 func open_login() -> void:
@@ -41,6 +42,21 @@ func _connect_buttons() -> void:
 		register_confirm.pressed.connect(_on_register_submit)
 	if register_back != null and not register_back.pressed.is_connected(_on_register_back):
 		register_back.pressed.connect(_on_register_back)
+
+func _connect_auth_state() -> void:
+	if ApiClient != null and not ApiClient.auth_state_changed.is_connected(_on_auth_state_changed):
+		ApiClient.auth_state_changed.connect(_on_auth_state_changed)
+
+func _on_auth_state_changed(is_logged_in: bool, _reason: String) -> void:
+	if is_logged_in:
+		hide_popup()
+		if _reason == "auto_login":
+			Alert.push("logined :3", false)
+			get_tree().call_group("profile_panels", "refresh_from_api")
+			get_tree().call_group("user_profile_panels", "refresh_from_api")
+		return
+	if _reason == "auto_login_failed" or _reason == "auth_failed":
+		open_login()
 
 func _bind_ui() -> void:
 	login_panel = get_node_or_null("Login") as Control

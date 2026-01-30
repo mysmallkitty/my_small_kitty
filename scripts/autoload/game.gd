@@ -41,6 +41,21 @@ func get_cached_map(map_id: String) -> MapData:
 		return map_cache[map_id]
 	return null
 
+func get_rank_from_total_pp(pp) -> int:
+	if pp < 500:
+		return 1
+	elif pp < 1000:
+		return 2
+	elif pp < 2500:
+		return 3
+	elif pp < 5000:
+		return 4
+	elif pp < 10000:
+		return 5
+	elif pp < 20000:
+		return 6
+	return 7
+
 func set_master_volume(value: float) -> void:
 	master_volume = clampf(value, 0.0, 1.0)
 	_apply_audio()

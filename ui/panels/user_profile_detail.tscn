@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3 uid="uid://bpfpfirn2b13r"]
+[gd_scene load_steps=13 format=3 uid="uid://bpfpfirn2b13r"]
 
 [ext_resource type="Script" uid="uid://cgy33tbyoje6b" path="res://scripts/ui/user_profile_detail.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_uavsx"]
@@ -11,6 +11,7 @@
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="9_ga5xi"]
 [ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="10_65g8n"]
 [ext_resource type="Texture2D" uid="uid://cdb1r6yfycofa" path="res://graphics/ui/16px/user_guest.png" id="11_hxnar"]
+[ext_resource type="Texture2D" uid="uid://b2odneysof1e2" path="res://graphics/ui/8px/ranks/1.png" id="12_ac3mq"]
 
 [node name="UserProfileDetail" type="Control"]
 layout_mode = 3
@@ -53,7 +54,7 @@ offset_top = 26.0
 offset_right = 106.0
 offset_bottom = 33.0
 theme_override_font_sizes/font_size = 7
-text = "#0 (0000pp)"
+text = "#0"
 clip_text = true
 
 [node name="Play" type="Sprite2D" parent="."]
@@ -100,6 +101,16 @@ theme_override_font_sizes/font_size = 7
 text = "2000-01-01"
 clip_text = true
 
+[node name="TotalPP" type="Label" parent="."]
+layout_mode = 0
+offset_left = 83.0
+offset_top = 53.0
+offset_right = 136.0
+offset_bottom = 60.0
+theme_override_font_sizes/font_size = 7
+text = "0pp"
+clip_text = true
+
 [node name="Flag" type="Sprite2D" parent="."]
 position = Vector2(13, 56)
 texture = ExtResource("4_ac3mq")
@@ -124,3 +135,7 @@ click_sound = ExtResource("10_65g8n")
 [node name="ProfilePic" type="Sprite2D" parent="."]
 position = Vector2(15, 25)
 texture = ExtResource("11_hxnar")
+
+[node name="PPIcon" type="Sprite2D" parent="."]
+position = Vector2(77, 56)
+texture = ExtResource("12_ac3mq")

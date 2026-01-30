@@ -61,4 +61,4 @@ offset_top = 9.0
 offset_right = 99.0
 offset_bottom = 16.0
 theme = ExtResource("2_pq7qc")
-text = "click here to login"
+text = "guest"

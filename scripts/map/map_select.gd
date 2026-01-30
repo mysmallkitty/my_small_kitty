@@ -24,6 +24,7 @@ func _ready() -> void:
 	_connect_root_buttons()
 	_connect_panels()
 	_setup_profile_click()
+	call_deferred("_refresh_me_after_play")
 	_refresh_list()
 	set_process(true)
 	_update_detail_panel()
@@ -58,6 +59,8 @@ func _connect_panels() -> void:
 		var leaderboard_panel := _get_leaderboard_panel()
 		if leaderboard_panel != null and not leaderboard_panel.close_pressed.is_connected(_on_leaderboard_close_pressed):
 			leaderboard_panel.close_pressed.connect(_on_leaderboard_close_pressed)
+		if leaderboard_panel != null and not leaderboard_panel.user_selected.is_connected(_on_leaderboard_user_selected):
+			leaderboard_panel.user_selected.connect(_on_leaderboard_user_selected)
 	else:
 		var editor_panel := _get_editor_detail_panel()
 		if editor_panel != null:
@@ -507,6 +510,40 @@ func _load_leaderboard() -> void:
 					if typeof(items) == TYPE_ARRAY:
 						rows = items
 	leaderboard_panel.set_rows(rows)
+
+func _on_leaderboard_user_selected(user_id: int) -> void:
+	if user_id <= 0:
+		return
+	var result: Dictionary = await ApiClient.GET("/api/v1/user/%s" % str(user_id))
+	if not result.get("ok", false):
+		Alert.push(ApiClient._error_message(result), true)
+		return
+	var data = result.get("data", null)
+	if typeof(data) != TYPE_DICTIONARY:
+		return
+	_open_user_profile_detail(data as Dictionary)
+
+func _refresh_me_after_play() -> void:
+	if ApiClient.access_token == "":
+		return
+	await AuthService.me()
+	for panel in get_tree().get_nodes_in_group("profile_panels"):
+		if panel != null and panel.has_method("refresh_from_api"):
+			panel.refresh_from_api()
+	for panel in get_tree().get_nodes_in_group("user_profile_panels"):
+		if panel != null and panel.has_method("refresh_from_api"):
+			panel.refresh_from_api()
+
+func _open_user_profile_detail(user: Dictionary) -> void:
+	var profile_detail := get_node_or_null("UI/UserProfileDetail") as Control
+	if profile_detail == null:
+		return
+	if profile_detail.has_method("open_with_user"):
+		profile_detail.open_with_user(user)
+	elif profile_detail.has_method("show_popup"):
+		profile_detail.show_popup()
+	else:
+		profile_detail.visible = true
 
 func _show_popup(panel: Control) -> void:
 	_show_hide_popup(panel, true)

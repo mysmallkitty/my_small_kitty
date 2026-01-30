@@ -8,11 +8,14 @@ var access_token: String = ""
 var refresh_token: String = ""
 var me: Dictionary
 var is_server_down = false
+const TOKEN_STORE_PATH := "user://auth_tokens.json"
+signal auth_state_changed(is_logged_in: bool, reason: String)
 
 func _ready() -> void:
 	base_url = _resolve_base_url()
 	print(base_url)
 	_check_server_health()
+	call_deferred("_auto_login")
 
 func set_base_url(url: String) -> void:
 	var trimmed := url.strip_edges()
@@ -26,6 +29,67 @@ func set_refresh_token(token: String) -> void:
 	refresh_token = token
 func clear_access_token() -> void:
 	access_token = ""
+
+func clear_tokens() -> void:
+	access_token = ""
+	refresh_token = ""
+	var path := TOKEN_STORE_PATH
+	if FileAccess.file_exists(path):
+		DirAccess.remove_absolute(path)
+	auth_state_changed.emit(false, "cleared")
+
+func save_tokens() -> void:
+	if refresh_token == "":
+		return
+	var file := FileAccess.open(TOKEN_STORE_PATH, FileAccess.WRITE)
+	if file == null:
+		return
+	var payload := {
+		"refresh_token": refresh_token,
+	}
+	file.store_string(JSON.stringify(payload, ""))
+	file.close()
+
+func _load_tokens() -> void:
+	if not FileAccess.file_exists(TOKEN_STORE_PATH):
+		return
+	var file := FileAccess.open(TOKEN_STORE_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var text := file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(text)
+	if typeof(parsed) == TYPE_DICTIONARY:
+		var data: Dictionary = parsed
+		refresh_token = str(data.get("refresh_token", ""))
+
+func _auto_login() -> void:
+	_load_tokens()
+	if refresh_token == "":
+		return
+	var res := await POST("/api/v1/user/refresh", {"refresh_token": refresh_token})
+	if res.get("ok", false) and typeof(res.get("data", null)) == TYPE_DICTIONARY:
+		var data: Dictionary = res.get("data", {})
+		if data.has("access_token"):
+			set_access_token(str(data.get("access_token", "")))
+		if data.has("refresh_token"):
+			set_refresh_token(str(data.get("refresh_token", "")))
+		save_tokens()
+		var me_res := await GET("/api/v1/user/me")
+		if me_res.get("ok", false) and typeof(me_res.get("data", null)) == TYPE_DICTIONARY:
+			me = me_res["data"]
+			auth_state_changed.emit(true, "auto_login")
+		else:
+			me = {}
+			auth_state_changed.emit(false, "auto_login_failed")
+	else:
+		clear_tokens()
+		auth_state_changed.emit(false, "auto_login_failed")
+
+func handle_auth_failure() -> void:
+	clear_tokens()
+	me = {}
+	auth_state_changed.emit(false, "auth_failed")
 
 func _build_headers(extra_headers: PackedStringArray = PackedStringArray()) -> PackedStringArray:
 	var headers := PackedStringArray()
@@ -128,6 +192,8 @@ func request_json(method: int, path: String, body: Variant = null, extra_headers
 		}
 
 	var ok := response_code >= 200 and response_code < 300
+	if response_code == 401:
+		handle_auth_failure()
 
 	var parsed: Variant = null
 	if raw_text.strip_edges() != "":
@@ -188,6 +254,8 @@ func request_raw(method: int, path: String, body: Variant = null, extra_headers:
 		}
 
 	var ok := response_code >= 200 and response_code < 300
+	if response_code == 401:
+		handle_auth_failure()
 	return {
 		"ok": ok,
 		"code": response_code,

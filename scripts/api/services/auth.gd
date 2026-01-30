@@ -26,11 +26,14 @@ static func login(username: String, password: String) -> Dictionary:
 	if res.ok and typeof(res.data) == TYPE_DICTIONARY and res.data.has("access_token"):
 		ApiClient.set_access_token(str(res.data["access_token"]))
 		ApiClient.set_refresh_token(str(res.data.get("refresh_token", "")))
+		ApiClient.save_tokens()
 		var me_res := await ApiClient.GET("/api/v1/user/me")
 		if me_res.get("ok", false) and typeof(me_res.get("data", null)) == TYPE_DICTIONARY:
 			ApiClient.me = me_res["data"]
+			ApiClient.auth_state_changed.emit(true, "login")
 		else:
 			ApiClient.me = {}
+			ApiClient.auth_state_changed.emit(false, "login_failed")
 		
 	return res
 
@@ -44,7 +47,9 @@ static func me() -> Dictionary:
 
 static func logout() -> void:
 	ApiClient.clear_access_token()
+	ApiClient.clear_tokens()
 	ApiClient.me = {}
+	ApiClient.auth_state_changed.emit(false, "logout")
 
 static func validate_credentials(username: String, password: String) -> String:
 	if username == "":

@@ -2,6 +2,7 @@ class_name MapSelectLeaderboardPanel
 extends SlidePopup
 
 signal close_pressed
+signal user_selected(user_id: int)
 
 @export var row_scene: PackedScene = preload("res://ui/panels/record_row.tscn")
 
@@ -44,10 +45,23 @@ func set_rows(rows: Array) -> void:
 		if death_label != null:
 			death_label.text = str(int(entry_dict.get("deaths", entry_dict.get("death", 0))))
 		var pp_label := row_node.get_node_or_null("Panel/HBoxContainer/PP") as Label
-		if death_label != null:
+		if pp_label != null:
 			pp_label.text = str(int(entry_dict.get("pp", 0))) + "pp"
+		var user_id := int(entry_dict.get("user_id", 0))
+		row_node.set_meta("user_id", user_id)
+		row_node.mouse_filter = Control.MOUSE_FILTER_STOP
+		if not row_node.gui_input.is_connected(_on_row_input):
+			row_node.gui_input.connect(_on_row_input.bind(row_node))
 		_rows.add_child(row_node)
 		y += row_node.size.y
+
+func _on_row_input(event: InputEvent, row_node: Control) -> void:
+	if event is InputEventMouseButton:
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_LEFT and mb.pressed:
+			var user_id := int(row_node.get_meta("user_id", 0))
+			if user_id > 0:
+				user_selected.emit(user_id)
 
 func _on_close_pressed() -> void:
 	close_pressed.emit()

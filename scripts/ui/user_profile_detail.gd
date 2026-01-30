@@ -11,6 +11,8 @@ var user_id = -1
 @onready var created_label = $JoinDate
 @onready var close_button = $CloseButton
 @onready var country_label = $CountryFlag
+@onready var total_pp_label = $TotalPP
+@onready var total_pp_icon = $PPIcon
 
 func _ready() -> void:
 	super()
@@ -20,6 +22,10 @@ func _ready() -> void:
 
 func open_with_me(me: Dictionary) -> void:
 	_apply_user(me)
+	show_popup()
+
+func open_with_user(user: Dictionary) -> void:
+	_apply_user(user)
 	show_popup()
 
 func refresh_from_api() -> void:
@@ -44,6 +50,14 @@ func _apply_user(user: Dictionary) -> void:
 		death_label.text = str(int(user.get("total_deaths", 0)))
 		created_label.text = _format_date(str(user.get("created_at", "")))
 		country_label.texture = get_flag_png(user.get("country","unknown"))
+		var total_pp = int(user.get("total_pp", 0))
+		total_pp_label.text = str(total_pp) + "pp"
+		total_pp_icon.texture = load(
+			"res://graphics/ui/8px/ranks/" +
+			str(Game.get_rank_from_total_pp(total_pp)) +
+			".png"
+			)
+		
 
 
 func _format_date(value: String) -> String:

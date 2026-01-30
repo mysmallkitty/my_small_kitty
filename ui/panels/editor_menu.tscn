@@ -3,9 +3,9 @@
 [ext_resource type="Script" uid="uid://dn25igyfb8oej" path="res://scripts/ui/popup_panel.gd" id="1_popup"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_r2tr6"]
 [ext_resource type="PackedScene" uid="uid://uhe6twg0cfbr" path="res://ui/difficulty_icon.tscn" id="2_n8v5q"]
-[ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="3_hmysb"]
 [ext_resource type="Texture2D" uid="uid://62iipdp8064g" path="res://graphics/ui/8px/simple/back.png" id="3_nfosa"]
 [ext_resource type="Texture2D" uid="uid://cpx15cl8s8cy2" path="res://graphics/ui/8px/simple/next.png" id="4_nfosa"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="5_2ug5b"]
 [ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="6_ifkgl"]
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="7_2ug5b"]
 
@@ -84,21 +84,23 @@ offset_right = 98.0
 offset_bottom = 50.0
 text = "BG"
 
-[node name="DifficultyDownButton" parent="." instance=ExtResource("3_hmysb")]
+[node name="DifficultyDownButton" parent="." instance=ExtResource("6_ifkgl")]
 layout_mode = 0
 offset_left = 8.0
 offset_top = 52.0
 offset_right = 24.0
 offset_bottom = 68.0
 icon_texture = ExtResource("3_nfosa")
+click_sound = ExtResource("5_2ug5b")
 
-[node name="DifficultyUpButton" parent="." instance=ExtResource("3_hmysb")]
+[node name="DifficultyUpButton" parent="." instance=ExtResource("6_ifkgl")]
 layout_mode = 0
 offset_left = 40.0
 offset_top = 52.0
 offset_right = 56.0
 offset_bottom = 68.0
 icon_texture = ExtResource("4_nfosa")
+click_sound = ExtResource("5_2ug5b")
 
 [node name="DifficultyIcon" parent="." instance=ExtResource("2_n8v5q")]
 layout_mode = 0
@@ -107,21 +109,23 @@ offset_top = 52.0
 offset_right = 40.0
 offset_bottom = 68.0
 
-[node name="BGPrevButton" parent="." instance=ExtResource("3_hmysb")]
+[node name="BGPrevButton" parent="." instance=ExtResource("6_ifkgl")]
 layout_mode = 0
 offset_left = 69.0
 offset_top = 52.0
 offset_right = 85.0
 offset_bottom = 68.0
 icon_texture = ExtResource("3_nfosa")
+click_sound = ExtResource("5_2ug5b")
 
-[node name="BGNextButton" parent="." instance=ExtResource("3_hmysb")]
+[node name="BGNextButton" parent="." instance=ExtResource("6_ifkgl")]
 layout_mode = 0
 offset_left = 101.0
 offset_top = 52.0
 offset_right = 117.0
 offset_bottom = 68.0
 icon_texture = ExtResource("4_nfosa")
+click_sound = ExtResource("5_2ug5b")
 
 [node name="CloseButton" parent="." instance=ExtResource("6_ifkgl")]
 unique_name_in_owner = true
@@ -131,3 +135,4 @@ offset_top = 5.0
 offset_right = 123.5
 offset_bottom = 21.0
 icon_texture = ExtResource("7_2ug5b")
+click_sound = ExtResource("5_2ug5b")

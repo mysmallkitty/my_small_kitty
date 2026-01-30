@@ -29,21 +29,19 @@ extends CharacterBody2D
 signal signal_damaged
 signal signal_grounded
 signal signal_respawn
+signal signal_complete
 
 var _dash_vel: Vector2
 var _vel: Vector2
 var _on_floor_timer := 0.0
 var _jump_buffer_timer := 0.0
 var _has_air_jump := true
-var _is_wall_climbing = false
-var _wall_climb_timer := 0.0
 
 var _is_dashing := false
 var _dash_timer := 0.0
 var _has_dash := false
 var dir_look := 1.0
 
-# 대시 종료 후 점프 부스트 윈도우
 var _post_dash_jump_timer := 0.0
 var _post_dash_dir := 1.0
 
@@ -135,20 +133,8 @@ func _die() -> void:
 	signal_damaged.emit()
 
 func _respawn() -> void:
-	_vel = Vector2.ZERO
-	_on_floor_timer = 0.0
-	_jump_buffer_timer = 0.0
-	_has_air_jump = true
-
-	_is_dashing = false
-	_dash_timer = 0.0
-	_has_dash = false
-	dir_look = 1.0
-
-	_post_dash_jump_timer = 0.0
-	_post_dash_dir = 1.0
-
-	signal_respawn.emit()
+	signal_damaged.emit()
+	
 
 func _input(event):
 	if editor_mode:
@@ -229,8 +215,11 @@ func _consume_jump_buffer_while_dashing() -> void:
 	_jump_buffer_timer = 0.0
 	_jump(can_air_jump and not can_ground_jump)
 
+func complete_map() -> void:
+	emit_signal("signal_complete")
+
 func _air_ground_step(delta: float) -> void:
-	_vel.y += gravity * delta
+	_vel.y -= gravity * delta * up_direction.y
 
 	var dir := Input.get_action_strength("player_right") - Input.get_action_strength("player_left")
 	var target_x := move_speed * dir
@@ -260,7 +249,7 @@ func _start_dash() -> void:
 
 func _dash_step(delta: float) -> void:
 	_dash_vel.x = dash_speed * dir_look
-	_dash_vel.y += (gravity * dash_gravity_scale - dash_lift_accel) * delta
+	_dash_vel.y += (gravity * - dash_gravity_scale + dash_lift_accel) * delta * up_direction.y
 
 func _end_dash(start_post_window: bool) -> void:
 	_is_dashing = false
@@ -276,13 +265,13 @@ func _jump(is_air_jump: bool) -> void:
 		var boosted_x := (dash_speed * dash_jump_boost_mult) + dash_jump_boost_add
 		_vel.x = boosted_x * _post_dash_dir
 		_play_hyper_sfx()
-		_vel.y = -jump_speed / 2
+		_vel.y = (jump_speed / 2) * up_direction.y
 	else:
 		if _is_dashing:
 			_end_dash(false)
 			_vel.x = 0.0
 		_play_jump_sfx()
-		_vel.y = -jump_speed
+		_vel.y = jump_speed * up_direction.y
 
 	if is_air_jump:
 		_has_air_jump = false

@@ -1,9 +1,11 @@
-[gd_resource type="Theme" load_steps=6 format=3 uid="uid://d3qrjbdprxnyr"]
+[gd_resource type="Theme" load_steps=8 format=3 uid="uid://d3qrjbdprxnyr"]
 
 [ext_resource type="StyleBox" uid="uid://bsihf1gxw4mcx" path="res://ui/theme/style_box_empty.tres" id="1_7181q"]
+[ext_resource type="Texture2D" uid="uid://dhujw0tl52ny2" path="res://graphics/ui/buttons/checkbox_enabled.png" id="2_4v5r2"]
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="2_cms1n"]
 [ext_resource type="FontFile" uid="uid://buy41f1xmjgsc" path="res://graphics/aseprite.otf" id="3_f2hgy"]
 [ext_resource type="StyleBox" uid="uid://cafusxbvxyy3k" path="res://ui/theme/textedit.tres" id="3_g4415"]
+[ext_resource type="Texture2D" uid="uid://urfbk4d1tcf8" path="res://graphics/ui/buttons/check_disabled.png" id="3_yhl4s"]
 [ext_resource type="StyleBox" uid="uid://0fx8m74q1h85" path="res://ui/theme/panel.tres" id="4_m0ati"]
 
 [resource]
@@ -19,6 +21,8 @@ Button/styles/hover = ExtResource("1_7181q")
 Button/styles/hover_mirrored = ExtResource("1_7181q")
 Button/styles/normal = ExtResource("1_7181q")
 Button/styles/pressed = ExtResource("1_7181q")
+CheckButton/icons/checked = ExtResource("2_4v5r2")
+CheckButton/icons/unchecked = ExtResource("3_yhl4s")
 LineEdit/colors/caret_color = Color(0.95, 0.95, 0.95, 1)
 LineEdit/colors/font_outline_color = Color(0, 0, 0, 1)
 LineEdit/font_sizes/font_size = 7

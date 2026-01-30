@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cch35x3210bth"]
+[gd_scene load_steps=7 format=3 uid="uid://cch35x3210bth"]
 
 [ext_resource type="Script" uid="uid://dojna2fa0e63x" path="res://scripts/map/map_world.gd" id="1_world"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="2_iw7op"]
@@ -6,7 +6,6 @@
 [ext_resource type="Script" uid="uid://b8yybj7rf263y" path="res://scripts/map/map_background.gd" id="4_bg"]
 [ext_resource type="Script" uid="uid://brhd4il8y0v1l" path="res://scripts/map/map_preview.gd" id="5_preview"]
 [ext_resource type="Texture2D" uid="uid://c0kfoeksewc0g" path="res://graphics/backgrounds/mountain.png" id="6_bgtex"]
-[ext_resource type="PackedScene" uid="uid://dl7caoqabrnib" path="res://ui/panels/auth_panel.tscn" id="7_auth"]
 
 [node name="MapPlay" type="Node2D"]
 script = ExtResource("1_world")
@@ -56,10 +55,11 @@ offset_top = 64.0
 offset_right = 208.0
 offset_bottom = 128.0
 
-[node name="AuthPanel" parent="UI" instance=ExtResource("7_auth")]
+[node name="ChatLineEdit" type="LineEdit" parent="UI"]
 visible = false
-offset_left = 93.0
-offset_top = 45.0
-offset_right = 93.0
-offset_bottom = 45.0
-dim_path = NodePath("../Dim")
+offset_left = 5.0
+offset_top = 169.0
+offset_right = 312.0
+offset_bottom = 176.0
+theme = ExtResource("2_iw7op")
+placeholder_text = "type chat"

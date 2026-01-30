@@ -7,26 +7,20 @@ extends Node2D
 var catalog: TileCatalog
 var tile_layers: Dictionary = {}
 var scene_root: Node2D
-var _alt_cache: Dictionary = {}
-var _alt_cache_tile_set: TileSet
-var _flags_matrix_cache: Dictionary = {}
 var _terrain_map: Dictionary = {}
 var _scene_nodes: Dictionary = {}
 
 const LAYER_ORDER := [
+	{"name": "deco", "z": -30},
 	{"name": "hazard", "z": -20},
 	{"name": "terrain", "z": -10},
 	{"name": "block", "z": -10},
-	{"name": "deco", "z": 10},
 	{"name": "object", "z": 20},
 ]
 
 func render_map(map_data: MapData) -> void:
 	if tile_set == null or map_data == null:
 		return
-	if _alt_cache_tile_set != tile_set:
-		_alt_cache.clear()
-		_alt_cache_tile_set = tile_set
 	catalog = TileCatalog.build(tile_set)
 	_ensure_layers()
 	_clear_layers()
@@ -35,29 +29,29 @@ func render_map(map_data: MapData) -> void:
 
 func _ensure_layers() -> void:
 	for entry in LAYER_ORDER:
-		var name := str(entry["name"])
-		var z_index := int(entry["z"])
-		if name == "object":
+		var _name := str(entry["name"])
+		var _z_index := int(entry["z"])
+		if _name == "object":
 			if scene_root == null:
 				scene_root = Node2D.new()
 				scene_root.name = "ObjectTiles"
 				add_child(scene_root)
-			scene_root.z_index = z_index
+			scene_root.z_index = _z_index
 			continue
-		if not tile_layers.has(name):
+		if not tile_layers.has(_name):
 			var layer := TileMapLayer.new()
-			layer.name = name.capitalize()
+			layer.name = _name.capitalize()
 			layer.tile_set = tile_set
 			layer.z_index = z_index
 			layer.texture_filter = layer_texture_filter
 			add_child(layer)
-			tile_layers[name] = layer
+			tile_layers[_name] = layer
 		else:
-			var existing = tile_layers[name]
+			var existing = tile_layers[_name]
 			if existing is TileMapLayer:
 				var layer := existing as TileMapLayer
 				layer.tile_set = tile_set
-				layer.z_index = z_index
+				layer.z_index = _z_index
 				layer.texture_filter = layer_texture_filter
 
 func _clear_layers() -> void:
@@ -88,6 +82,18 @@ func _resolve_tile_layer(layer_name: String) -> String:
 		_:
 			return layer_name
 
+func get_tile_layer(layer_name: String) -> TileMapLayer:
+	var resolved := _resolve_tile_layer(layer_name)
+	if not tile_layers.has(resolved):
+		return null
+	var layer = tile_layers[resolved]
+	if layer is TileMapLayer:
+		return layer as TileMapLayer
+	return null
+
+func _scene_cell_offset() -> Vector2:
+	return Vector2(MapData.TILE_SIZE * 0.5, MapData.TILE_SIZE * 0.5)
+
 func _apply_layer_tiles(layer_name: String, entries: Array, base: Vector2i) -> void:
 	var resolved := _resolve_tile_layer(layer_name)
 	if not tile_layers.has(resolved):
@@ -112,8 +118,7 @@ func _apply_layer_tiles(layer_name: String, entries: Array, base: Vector2i) -> v
 			continue
 		var atlas := _vec2i_from_value(entry.get("atlas", [0, 0]))
 		var flags := int(entry.get("alt", 0))
-		var alt_id := _get_alt_id_for_flags(source_id, atlas, flags)
-		tile_layer.set_cell(world_pos, source_id, atlas, alt_id)
+		tile_layer.set_cell(world_pos, source_id, atlas, flags)
 
 func _collect_terrain_cells(groups: Dictionary, entries: Array, base: Vector2i) -> void:
 	for item in entries:
@@ -160,6 +165,7 @@ func _apply_terrain_groups(groups: Dictionary) -> void:
 func _spawn_scene_entries(entries: Array, base: Vector2i) -> void:
 	if scene_root == null:
 		return
+	var offset := _scene_cell_offset()
 	for item in entries:
 		if typeof(item) != TYPE_DICTIONARY:
 			continue
@@ -172,8 +178,8 @@ func _spawn_scene_entries(entries: Array, base: Vector2i) -> void:
 			continue
 		var node = (packed as PackedScene).instantiate()
 		if node is Node2D:
-			var local_pos := _vec2i_from_value(entry.get("pos", null))
-			var world_pos := (base + local_pos) * MapData.TILE_SIZE
+			var local_pos = _vec2i_from_value(entry.get("pos", null))
+			var world_pos = Vector2(base + local_pos) * MapData.TILE_SIZE + offset
 			var node2d := node as Node2D
 			node2d.position = world_pos
 			var rot := int(entry.get("rot", 0))
@@ -182,13 +188,15 @@ func _spawn_scene_entries(entries: Array, base: Vector2i) -> void:
 			if rot != 0:
 				node2d.rotation = deg_to_rad(90.0 * float(rot))
 			if fh or fv:
-				var scale := node2d.scale
+				var _scale := node2d.scale
 				if fh:
-					scale.x *= -1.0
+					_scale.x *= -1.0
 				if fv:
-					scale.y *= -1.0
-				node2d.scale = scale
+					_scale.y *= -1.0
+				node2d.scale = _scale
 		scene_root.add_child(node)
+		if node.has_method("apply_map_entry"):
+			node.call_deferred("apply_map_entry", entry)
 		var key := base + _vec2i_from_value(entry.get("pos", null))
 		_scene_nodes[key] = node
 
@@ -219,8 +227,7 @@ func update_tile(layer_name: String, world_pos: Vector2i, entry: Dictionary) -> 
 		return
 	var atlas := _vec2i_from_value(entry.get("atlas", [0, 0]))
 	var flags := int(entry.get("alt", 0))
-	var alt_id := _get_alt_id_for_flags(source_id, atlas, flags)
-	tile_layer.set_cell(world_pos, source_id, atlas, alt_id)
+	tile_layer.set_cell(world_pos, source_id, atlas, flags)
 
 func update_scene(world_pos: Vector2i, entry: Dictionary) -> void:
 	if tile_set == null:
@@ -238,7 +245,7 @@ func update_scene(world_pos: Vector2i, entry: Dictionary) -> void:
 	var node = (packed as PackedScene).instantiate()
 	if node is Node2D:
 		var node2d := node as Node2D
-		node2d.position = Vector2(world_pos) * MapData.TILE_SIZE
+		node2d.position = Vector2(world_pos) * MapData.TILE_SIZE + _scene_cell_offset()
 		var rot := int(entry.get("rot", 0))
 		var fh := bool(entry.get("fh", false))
 		var fv := bool(entry.get("fv", false))
@@ -252,6 +259,8 @@ func update_scene(world_pos: Vector2i, entry: Dictionary) -> void:
 				scale.y *= -1.0
 			node2d.scale = scale
 	scene_root.add_child(node)
+	if node.has_method("apply_map_entry"):
+		node.call_deferred("apply_map_entry", entry)
 	_scene_nodes[world_pos] = node
 
 func update_terrain_cell(world_pos: Vector2i, source_id: int) -> void:
@@ -478,7 +487,7 @@ func _remove_scene_at(world_pos: Vector2i) -> void:
 		return
 	if scene_root == null:
 		return
-	var target_pos := Vector2(world_pos) * MapData.TILE_SIZE
+	var target_pos := Vector2(world_pos) * MapData.TILE_SIZE + _scene_cell_offset()
 	for child in scene_root.get_children():
 		if child is Node2D:
 			var node2d := child as Node2D
@@ -493,113 +502,5 @@ func _vec2i_from_value(value) -> Vector2i:
 			return Vector2i(int(arr[0]), int(arr[1]))
 	return Vector2i.ZERO
 
-func get_alt_id_for_flags(source_id: int, atlas_coords: Vector2i, flags: int) -> int:
-	return _get_alt_id_for_flags(source_id, atlas_coords, flags)
 
-func _get_alt_id_for_flags(source_id: int, atlas_coords: Vector2i, flags: int) -> int:
-	if flags == 0:
-		return 0
-	if tile_set == null:
-		return 0
-	var key := "%s:%s:%s" % [str(source_id), str(atlas_coords), str(flags)]
-	if _alt_cache.has(key):
-		return int(_alt_cache[key])
-	var source = tile_set.get_source(source_id)
-	if source is TileSetAtlasSource:
-		var atlas_source := source as TileSetAtlasSource
-		var alt_id := atlas_source.create_alternative_tile(atlas_coords)
-		var data := atlas_source.get_tile_data(atlas_coords, alt_id)
-		if data != null:
-			var base_data := atlas_source.get_tile_data(atlas_coords, 0)
-			if base_data != null:
-				_copy_collision_shapes(base_data, data)
-			var transform := _resolve_transform_flags(flags)
-			data.set_transpose(transform["transpose"])
-			data.set_flip_h(transform["flip_h"])
-			data.set_flip_v(transform["flip_v"])
-		_alt_cache[key] = alt_id
-		return alt_id
-	return 0
 
-func _copy_collision_shapes(base_data: TileData, alt_data: TileData) -> void:
-	if tile_set == null:
-		return
-	var layers := tile_set.get_physics_layers_count()
-	if layers <= 0:
-		return
-	for layer_id in range(layers):
-		var count := int(base_data.get_collision_polygons_count(layer_id))
-		alt_data.set_collision_polygons_count(layer_id, count)
-		for polygon_index in range(count):
-			var points := base_data.get_collision_polygon_points(layer_id, polygon_index)
-			alt_data.set_collision_polygon_points(layer_id, polygon_index, points)
-			var one_way := base_data.is_collision_polygon_one_way(layer_id, polygon_index)
-			alt_data.set_collision_polygon_one_way(layer_id, polygon_index, one_way)
-			var margin := base_data.get_collision_polygon_one_way_margin(layer_id, polygon_index)
-			alt_data.set_collision_polygon_one_way_margin(layer_id, polygon_index, margin)
-
-func _resolve_transform_flags(flags: int) -> Dictionary:
-	var rot := flags & 3
-	var fh := (flags & 4) != 0
-	var fv := (flags & 8) != 0
-	var desired := _matrix_mul(_matrix_mul(_flip_matrix(fh, true), _flip_matrix(fv, false)), _rotation_matrix(rot))
-	var mapping := _flags_matrix_map()
-	var key := _matrix_key(desired)
-	if mapping.has(key):
-		return mapping[key]
-	return {"flip_h": fh, "flip_v": fv, "transpose": false}
-
-func _flags_matrix_map() -> Dictionary:
-	if not _flags_matrix_cache.is_empty():
-		return _flags_matrix_cache
-	var mapping: Dictionary = {}
-	for transpose in [false, true]:
-		for flip_h in [false, true]:
-			for flip_v in [false, true]:
-				var mat := _flags_to_matrix(flip_h, flip_v, transpose)
-				mapping[_matrix_key(mat)] = {
-					"flip_h": flip_h,
-					"flip_v": flip_v,
-					"transpose": transpose,
-				}
-	_flags_matrix_cache = mapping
-	return _flags_matrix_cache
-
-func _flags_to_matrix(flip_h: bool, flip_v: bool, transpose: bool) -> Array:
-	var mat := [1, 0, 0, 1]
-	if transpose:
-		mat = [0, 1, 1, 0]
-	if flip_h:
-		mat = _matrix_mul(_flip_matrix(true, true), mat)
-	if flip_v:
-		mat = _matrix_mul(_flip_matrix(true, false), mat)
-	return mat
-
-func _rotation_matrix(rot: int) -> Array:
-	match rot & 3:
-		1:
-			return [0, -1, 1, 0]
-		2:
-			return [-1, 0, 0, -1]
-		3:
-			return [0, 1, -1, 0]
-		_:
-			return [1, 0, 0, 1]
-
-func _flip_matrix(enabled: bool, horizontal: bool) -> Array:
-	if not enabled:
-		return [1, 0, 0, 1]
-	if horizontal:
-		return [-1, 0, 0, 1]
-	return [1, 0, 0, -1]
-
-func _matrix_mul(a: Array, b: Array) -> Array:
-	return [
-		int(a[0]) * int(b[0]) + int(a[1]) * int(b[2]),
-		int(a[0]) * int(b[1]) + int(a[1]) * int(b[3]),
-		int(a[2]) * int(b[0]) + int(a[3]) * int(b[2]),
-		int(a[2]) * int(b[1]) + int(a[3]) * int(b[3]),
-	]
-
-func _matrix_key(mat: Array) -> String:
-	return "%s,%s,%s,%s" % [str(mat[0]), str(mat[1]), str(mat[2]), str(mat[3])]

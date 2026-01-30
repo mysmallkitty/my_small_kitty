@@ -1,0 +1,66 @@
+[gd_scene load_steps=6 format=3 uid="uid://bn77q56ga66bb"]
+
+[ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_u83ly"]
+[ext_resource type="Script" uid="uid://dn25igyfb8oej" path="res://scripts/ui/popup_panel.gd" id="2_qq28p"]
+[ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="3_38w81"]
+[ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="4_anvqf"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="5_yg5o6"]
+
+[node name="SearchFilter" type="Control"]
+clip_contents = true
+layout_mode = 3
+anchor_left = 0.2
+anchor_right = 0.2
+offset_left = -64.0
+offset_right = 114.0
+offset_bottom = 113.0
+theme = ExtResource("1_u83ly")
+script = ExtResource("2_qq28p")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 178.0
+offset_bottom = 113.0
+
+[node name="CloseButton" parent="Panel" instance=ExtResource("3_38w81")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 158.0
+offset_top = 4.0
+offset_right = 174.5
+offset_bottom = 20.0
+icon_texture = ExtResource("4_anvqf")
+click_sound = ExtResource("5_yg5o6")
+
+[node name="Header" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 62.0
+offset_top = 10.0
+offset_right = 114.0
+offset_bottom = 17.0
+text = "search maps"
+
+[node name="Search" type="LineEdit" parent="Panel"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 27.0
+offset_right = 164.0
+offset_bottom = 34.0
+placeholder_text = "search"
+alignment = 1
+
+[node name="IsCreator" type="CheckButton" parent="Panel"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 52.0
+offset_right = 66.0
+offset_bottom = 68.0
+text = "creator"
+
+[node name="IsLoved" type="CheckButton" parent="Panel"]
+layout_mode = 0
+offset_left = 15.0
+offset_top = 39.0
+offset_right = 76.0
+offset_bottom = 55.0
+text = "only loved"

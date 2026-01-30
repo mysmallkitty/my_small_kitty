@@ -1,0 +1,67 @@
+[gd_scene load_steps=7 format=3 uid="uid://rwluu81cwrgt"]
+
+[ext_resource type="Script" uid="uid://c0pggn2c65mql" path="res://objs/ghost_player.gd" id="1_nt1ng"]
+[ext_resource type="Texture2D" uid="uid://b5sd6kgftyqf3" path="res://graphics/kitty.png" id="2_s6g46"]
+[ext_resource type="Texture2D" uid="uid://b4v5ol2j3hr8o" path="res://graphics/ui/8px/death.png" id="3_u4dp0"]
+[ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="4_s6g46"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_glhse"]
+size = Vector2(6, 8)
+
+[sub_resource type="Gradient" id="Gradient_a3i47"]
+offsets = PackedFloat32Array(0.6559486, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[node name="GhostPlayer" type="CharacterBody2D"]
+position = Vector2(5, 4)
+collision_layer = 5
+collision_mask = 4
+script = ExtResource("1_nt1ng")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(0, 2)
+scale = Vector2(0.5, 0.5)
+shape = SubResource("RectangleShape2D_glhse")
+
+[node name="Kitty" type="Sprite2D" parent="."]
+modulate = Color(1, 1, 1, 0.50980395)
+texture_filter = 1
+texture_repeat = 1
+texture = ExtResource("2_s6g46")
+
+[node name="DeathParticles" type="CPUParticles2D" parent="."]
+z_index = 20
+emitting = false
+amount = 1
+texture = ExtResource("3_u4dp0")
+lifetime = 0.7
+one_shot = true
+explosiveness = 1.0
+gravity = Vector2(0, -100)
+color_ramp = SubResource("Gradient_a3i47")
+
+[node name="ChatContainer" type="VBoxContainer" parent="."]
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -38.0
+offset_top = -114.0
+offset_right = 40.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 0
+theme = ExtResource("4_s6g46")
+alignment = 2
+
+[node name="playername" type="Label" parent="."]
+modulate = Color(1, 1, 1, 0.50980395)
+offset_left = -53.0
+offset_top = -12.0
+offset_right = 55.0
+offset_bottom = -5.0
+theme = ExtResource("4_s6g46")
+text = "(guest)"
+horizontal_alignment = 1
+vertical_alignment = 1

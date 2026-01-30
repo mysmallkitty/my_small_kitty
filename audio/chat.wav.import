@@ -3,12 +3,12 @@
 importer="wav"
 type="AudioStreamWAV"
 uid="uid://bunj6vc5xdds3"
-path="res://.godot/imported/orb2.wav-dc5f9422dc4c328c58cfb73268d6283a.sample"
+path="res://.godot/imported/chat.wav-fd0562201453dd96deff254fb63ddf34.sample"
 
 [deps]
 
-source_file="res://audio/orb2.wav"
-dest_files=["res://.godot/imported/orb2.wav-dc5f9422dc4c328c58cfb73268d6283a.sample"]
+source_file="res://audio/chat.wav"
+dest_files=["res://.godot/imported/chat.wav-fd0562201453dd96deff254fb63ddf34.sample"]
 
 [params]
 

@@ -28,6 +28,7 @@ func _ready() -> void:
 	_apply_icon()
 	_apply_state(_get_state())
 	pressed.connect(_pressed)
+	add_child(audio_stream)
 	
 
 func _pressed() -> void:

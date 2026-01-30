@@ -13,7 +13,6 @@ var enable = true
 
 func _ready() -> void:
 	sfx_player = AudioStreamPlayer.new()
-	body_entered.connect(_on_body_entered)
 	if sfx:
 		sfx_player.stream = sfx
 		sfx_player.bus = "sfx"

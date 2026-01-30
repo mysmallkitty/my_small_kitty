@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://c3qaqw6c26p23"]
+[gd_scene load_steps=11 format=3 uid="uid://c3qaqw6c26p23"]
 
 [ext_resource type="PackedScene" uid="uid://uhe6twg0cfbr" path="res://ui/difficulty_icon.tscn" id="2_4axvd"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="3_aumbu"]
@@ -9,8 +9,10 @@
 [ext_resource type="Texture2D" uid="uid://deg4gonuf6bnk" path="res://graphics/ui/8px/simple/check.png" id="10_jxlfc"]
 [ext_resource type="PackedScene" uid="uid://dli2pb8ippthn" path="res://ui/button_big.tscn" id="13_mgvde"]
 [ext_resource type="Texture2D" uid="uid://c3j1ean530x1r" path="res://graphics/ui/16px/play.png" id="14_w36ic"]
+[ext_resource type="Script" path="res://scripts/map/select/panels/map_select_detail_editor.gd" id="1_detail_editor_script"]
 
 [node name="DetailPanel" type="Control"]
+script = ExtResource("1_detail_editor_script")
 layout_mode = 3
 anchors_preset = 0
 offset_right = 144.0

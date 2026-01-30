@@ -48,13 +48,19 @@ func set_data(entry: Dictionary) -> void:
 		_apply_data()
 
 func _apply_data() -> void:
+	var meta = data.get("metadata", null)
+	if typeof(meta) != TYPE_DICTIONARY:
+		meta = {}
 	if title_label != null:
-		title_label.text = str(data.get("title", ""))
-		if title_label.text.strip_edges() == "":
-			title_label.text = "untitled"
+		var title := str(data.get("title", meta.get("title", "")))
+		title_label.text = title if title.strip_edges() != "" else "untitled"
+	if creator_label != null:
+		creator_label.text = str(data.get("creator", meta.get("creator", "")))
 	if difficulty_icon != null:
 		difficulty_icon.texture = null
-	_update_difficulty_icon(int(data.get("difficulty", data.get("level", 1))))
+	if ranked_icon != null:
+		ranked_icon.visible = bool(data.get("is_ranked", false))
+	_update_difficulty_icon(int(data.get("rating", meta.get("rating", 1))))
 
 func set_selected(selected: bool) -> void:
 	_selected = selected

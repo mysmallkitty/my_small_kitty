@@ -21,6 +21,7 @@ func _draw() -> void:
 		return
 	_draw_grid(camera)
 	_draw_chunks(camera)
+	_draw_cursor_selection(camera)
 
 func _draw_grid(camera: Camera2D) -> void:
 	var map_data: MapData = editor.map_data
@@ -78,3 +79,16 @@ func _draw_chunk_handles(chunk: ChunkData) -> void:
 	draw_rect(Rect2(right_mid - Vector2(half, half), Vector2(editor.CHUNK_HANDLE_SIZE, editor.CHUNK_HANDLE_SIZE)), handle_color, true)
 	draw_rect(Rect2(top_mid - Vector2(half, half), Vector2(editor.CHUNK_HANDLE_SIZE, editor.CHUNK_HANDLE_SIZE)), handle_color, true)
 	draw_rect(Rect2(bottom_mid - Vector2(half, half), Vector2(editor.CHUNK_HANDLE_SIZE, editor.CHUNK_HANDLE_SIZE)), handle_color, true)
+
+func _draw_cursor_selection(camera: Camera2D) -> void:
+	if editor == null:
+		return
+	if not editor.has_method("_get_cursor_rect_pixels"):
+		return
+	if not editor.cursor_rect_active:
+		return
+	var rect: Rect2 = editor._get_cursor_rect_pixels()
+	if rect.size == Vector2.ZERO:
+		return
+	draw_rect(rect, Color(0, 0, 0, 0.25), true)
+	draw_rect(rect, Color(0, 0, 0, 0.6), false, 1.0)

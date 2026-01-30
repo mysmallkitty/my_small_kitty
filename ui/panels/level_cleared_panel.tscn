@@ -1,3 +1,61 @@
-[gd_scene format=3 uid="uid://c58h4ogpvhntm"]
+[gd_scene load_steps=6 format=3 uid="uid://c58h4ogpvhntm"]
 
-[node name="LevelClearedPanel" type="Node2D"]
+[ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_n3mk6"]
+[ext_resource type="PackedScene" uid="uid://dli2pb8ippthn" path="res://ui/button_big.tscn" id="2_fcgrq"]
+[ext_resource type="Texture2D" uid="uid://bnx46a8gicymf" path="res://graphics/ui/16px/check.png" id="3_2wjs2"]
+[ext_resource type="Texture2D" uid="uid://b4v5ol2j3hr8o" path="res://graphics/ui/8px/death.png" id="4_bnodj"]
+[ext_resource type="Texture2D" uid="uid://ctd672p5crq2a" path="res://graphics/ui/8px/flag.png" id="5_njmjo"]
+
+[node name="LevelClearedPanel" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+theme = ExtResource("1_n3mk6")
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 120.0
+offset_bottom = 99.0
+
+[node name="Header" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 10.0
+offset_right = 95.0
+offset_bottom = 17.0
+text = "level compeleted!"
+
+[node name="IconButton" parent="Panel" instance=ExtResource("2_fcgrq")]
+layout_mode = 1
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 0.0
+anchor_bottom = 0.0
+offset_left = 48.0
+offset_top = 67.0
+offset_right = 72.0
+offset_bottom = 91.0
+icon_texture = ExtResource("3_2wjs2")
+
+[node name="TotalDeath" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 19.0
+offset_top = 34.0
+offset_right = 79.0
+offset_bottom = 41.0
+text = "0"
+
+[node name="ClearTime" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 19.0
+offset_top = 45.0
+offset_right = 79.0
+offset_bottom = 52.0
+text = "00:00:00"
+
+[node name="Death" type="Sprite2D" parent="Panel"]
+position = Vector2(10, 37)
+texture = ExtResource("4_bnodj")
+
+[node name="Flag" type="Sprite2D" parent="Panel"]
+position = Vector2(10, 48)
+texture = ExtResource("5_njmjo")

@@ -35,6 +35,7 @@ func push(message: String, is_warning: bool = false) -> void:
 	var target := _calc_target_position(index, alert)
 	_start_enter(alert, target)
 	_reflow(true, alert)
+	print(message)
 	_schedule_exit(alert)
 
 func _apply_alert_style(alert: Control, message: String, is_warning: bool) -> void:

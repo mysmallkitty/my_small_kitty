@@ -3,7 +3,7 @@ extends RefCounted
 
 const TILE_SIZE := 8
 const MIN_CHUNK_SIZE := Vector2i(40, 23)
-const COMPACT_VERSION := 4
+const COMPACT_VERSION := 7
 const INVALID_SOURCE_ID := -2147483648
 
 var version := COMPACT_VERSION
@@ -30,32 +30,10 @@ static func _make_metadata() -> Dictionary:
 		"title": "",
 		"detail": "",
 		"map_id": -1,
-		"difficulty": 1,
+		"rating": 1,
 		"bg": "",
-		"is_verified": false,
+		"verified_hash": "",
 	}
-
-static func _normalize_layers(raw: Dictionary) -> Dictionary:
-	var out := _make_layers()
-	_append_layer_entries(out, raw, "object", Vector2i.ZERO)
-	_append_layer_entries(out, raw, "deco", Vector2i.ZERO)
-	_append_layer_entries(out, raw, "block", Vector2i.ZERO)
-	_append_layer_entries(out, raw, "terrain", Vector2i.ZERO)
-	_append_layer_entries(out, raw, "hazard", Vector2i.ZERO)
-
-	if raw.has("scene") and typeof(raw["scene"]) == TYPE_ARRAY:
-		_append_entries_with_offset(out["object"], raw["scene"], Vector2i.ZERO)
-	if raw.has("fg") and typeof(raw["fg"]) == TYPE_ARRAY:
-		_append_entries_with_offset(out["deco"], raw["fg"], Vector2i.ZERO)
-	if raw.has("damage") and typeof(raw["damage"]) == TYPE_ARRAY:
-		_append_entries_with_offset(out["hazard"], raw["damage"], Vector2i.ZERO)
-	if raw.has("collision") and typeof(raw["collision"]) == TYPE_DICTIONARY:
-		var collision: Dictionary = raw["collision"]
-		if collision.has("terrain") and typeof(collision["terrain"]) == TYPE_ARRAY:
-			_append_entries_with_offset(out["terrain"], collision["terrain"], Vector2i.ZERO)
-		if collision.has("tiles") and typeof(collision["tiles"]) == TYPE_ARRAY:
-			_append_entries_with_offset(out["block"], collision["tiles"], Vector2i.ZERO)
-	return out
 
 static func _normalize_metadata(raw: Dictionary) -> Dictionary:
 	var out := _make_metadata()
@@ -65,12 +43,12 @@ static func _normalize_metadata(raw: Dictionary) -> Dictionary:
 		out["detail"] = str(raw.get("detail", ""))
 	if raw.has("map_id"):
 		out["map_id"] = int(raw.get("map_id", -1))
-	if raw.has("difficulty"):
-		out["difficulty"] = clampi(int(raw.get("difficulty", 1)), 1, 8)
+	if raw.has("rating"):
+		out["rating"] = clampi(int(raw.get("rating", 1)), 1, 8)
 	if raw.has("bg"):
 		out["bg"] = str(raw.get("bg", ""))
-	if raw.has("is_verified"):
-		out["is_verified"] = bool(raw.get("is_verified", false))
+	if raw.has("verified_hash"):
+		out["verified_hash"] = str(raw.get("verified_hash", ""))
 	return out
 
 static func create_debug() -> MapData:
@@ -89,60 +67,6 @@ static func create_debug() -> MapData:
 
 	map.start_chunk_id = chunk_a.id
 	map.spawn = chunk_a.pos + Vector2i(3, 3)
-	return map
-
-func to_dict() -> Dictionary:
-	var out := {
-		"version": version,
-		"metadata": _normalize_metadata(metadata),
-		"start_chunk_id": start_chunk_id,
-		"spawn": [spawn.x, spawn.y],
-		"chunks": [],
-		"layers": _normalize_layers(layers),
-	}
-	for chunk in chunks:
-		out["chunks"].append(chunk.to_dict())
-	return out
-
-static func from_dict(data: Dictionary) -> MapData:
-	var map := MapData.new()
-	map.version = int(data.get("version", 1))
-	var meta_data: Dictionary = data.get("metadata", {})
-	if data.has("map_id"):
-		meta_data["map_id"] = data.get("map_id", -1)
-	if data.has("difficulty"):
-		meta_data["difficulty"] = data.get("difficulty", 1)
-	if data.has("bg"):
-		meta_data["bg"] = data.get("bg", "")
-	if data.has("is_verified"):
-		meta_data["is_verified"] = data.get("is_verified", false)
-	map.metadata = _normalize_metadata(meta_data)
-	map.start_chunk_id = str(data.get("start_chunk_id", ""))
-	var has_spawn := data.has("spawn")
-	if has_spawn:
-		map.spawn = _vec2i_from_value(data.get("spawn", null))
-	var has_top_layers := data.has("layers") and typeof(data.get("layers", null)) == TYPE_DICTIONARY
-	if has_top_layers:
-		map.layers = _normalize_layers(data.get("layers", {}))
-	else:
-		map.layers = _make_layers()
-	var chunk_list: Array = data.get("chunks", [])
-	var legacy_spawn_set := false
-	for entry in chunk_list:
-		if typeof(entry) != TYPE_DICTIONARY:
-			continue
-		var entry_dict := entry as Dictionary
-		var chunk := ChunkData.from_dict(entry_dict)
-		map.chunks.append(chunk)
-		if not has_top_layers and entry_dict.has("layers") and typeof(entry_dict["layers"]) == TYPE_DICTIONARY:
-			_merge_layers(map.layers, entry_dict["layers"], chunk.pos)
-		if not has_spawn and not legacy_spawn_set and entry_dict.has("spawn"):
-			if map.start_chunk_id == "" or chunk.id == map.start_chunk_id:
-				var spawn_local := _vec2i_from_value(entry_dict.get("spawn", [3, 3]))
-				map.spawn = chunk.pos + spawn_local
-				legacy_spawn_set = true
-	if not has_spawn and not legacy_spawn_set:
-		_set_default_spawn(map)
 	return map
 
 func to_compact_dict() -> Dictionary:
@@ -165,20 +89,13 @@ func to_compact_dict() -> Dictionary:
 	var meta := _normalize_metadata(metadata)
 	var out: Dictionary = {
 		"v": COMPACT_VERSION,
-		"m": [
-			str(meta.get("title", "")),
-			str(meta.get("detail", "")),
-			int(meta.get("map_id", -1)),
-			clampi(int(meta.get("difficulty", 1)), 1, 8),
-			str(meta.get("bg", "")),
-			1 if bool(meta.get("is_verified", false)) else 0,
-		],
+		"meta": meta,
 		"s": start_chunk_id,
 		"p": [spawn.x, spawn.y],
 		"c": chunks_out,
 	}
 	if not layers_compact.is_empty():
-		out["l"] = layers_compact
+		out["layers"] = layers_compact
 	if name_table.size() > 0:
 		out["sn"] = name_table
 	if scene_table.size() > 0:
@@ -188,21 +105,8 @@ func to_compact_dict() -> Dictionary:
 static func from_compact_dict(data: Dictionary) -> MapData:
 	var map := MapData.new()
 	map.version = int(data.get("v", COMPACT_VERSION))
-	var meta: Array = data.get("m", [])
-	var meta_dict := _make_metadata()
-	if meta.size() > 0:
-		meta_dict["title"] = str(meta[0])
-	if meta.size() > 1:
-		meta_dict["detail"] = str(meta[1])
-	if meta.size() > 2:
-		meta_dict["map_id"] = int(meta[2])
-	if meta.size() > 3:
-		meta_dict["difficulty"] = clampi(int(meta[3]), 1, 8)
-	if meta.size() > 4:
-		meta_dict["bg"] = str(meta[4])
-	if meta.size() > 5:
-		meta_dict["is_verified"] = bool(meta[5])
-	map.metadata = _normalize_metadata(meta_dict)
+	var meta_raw: Dictionary = data.get("meta", {})
+	map.metadata = _normalize_metadata(meta_raw)
 	map.start_chunk_id = str(data.get("s", ""))
 	var has_spawn := data.has("p")
 	if has_spawn:
@@ -210,14 +114,12 @@ static func from_compact_dict(data: Dictionary) -> MapData:
 
 	var name_table: Array = data.get("sn", [])
 	var scene_table: Array = data.get("sp", [])
-	var has_top_layers := data.has("l") and typeof(data.get("l", null)) == TYPE_DICTIONARY
-	if has_top_layers:
-		map.layers = _expand_compact_layers(data.get("l", {}), name_table, scene_table)
+	if data.has("layers") and typeof(data.get("layers", null)) == TYPE_DICTIONARY:
+		map.layers = _expand_compact_layers(data.get("layers", {}), name_table, scene_table)
 	else:
 		map.layers = _make_layers()
 
 	var chunk_list: Array = data.get("c", [])
-	var legacy_spawn_set := false
 	for raw_entry in chunk_list:
 		if typeof(raw_entry) != TYPE_ARRAY:
 			continue
@@ -229,17 +131,7 @@ static func from_compact_dict(data: Dictionary) -> MapData:
 		chunk.pos = Vector2i(int(entry[1]), int(entry[2]))
 		chunk.size = Vector2i(int(entry[3]), int(entry[4]))
 		map.chunks.append(chunk)
-		if not has_top_layers and entry.size() >= 8:
-			var layers_compact: Dictionary = {}
-			if typeof(entry[7]) == TYPE_DICTIONARY:
-				layers_compact = entry[7]
-			var legacy_layers := _expand_compact_layers(layers_compact, name_table, scene_table)
-			_merge_layers(map.layers, legacy_layers, chunk.pos)
-			if not has_spawn and not legacy_spawn_set and entry.size() >= 7:
-				if map.start_chunk_id == "" or chunk.id == map.start_chunk_id:
-					map.spawn = chunk.pos + Vector2i(int(entry[5]), int(entry[6]))
-					legacy_spawn_set = true
-	if not has_spawn and not legacy_spawn_set:
+	if not has_spawn:
 		_set_default_spawn(map)
 	return map
 
@@ -319,19 +211,19 @@ static func _compact_layers(_layers: Dictionary, name_table: Array[String], name
 	var layers_compact: Dictionary = {}
 	var hazard_entries := _compact_tile_entries(_get_array_from_dict(_layers, "hazard"), name_table, name_index)
 	if not hazard_entries.is_empty():
-		layers_compact["d"] = hazard_entries
+		layers_compact["hazard"] = hazard_entries
 	var deco_entries := _compact_tile_entries(_get_array_from_dict(_layers, "deco"), name_table, name_index)
 	if not deco_entries.is_empty():
-		layers_compact["f"] = deco_entries
+		layers_compact["deco"] = deco_entries
 	var block_entries := _compact_tile_entries(_get_array_from_dict(_layers, "block"), name_table, name_index)
 	if not block_entries.is_empty():
-		layers_compact["o"] = block_entries
+		layers_compact["block"] = block_entries
 	var terrain_entries := _compact_terrain_entries(_get_array_from_dict(_layers, "terrain"), name_table, name_index)
 	if not terrain_entries.is_empty():
-		layers_compact["t"] = terrain_entries
+		layers_compact["terrain"] = terrain_entries
 	var object_entries := _compact_scene_entries(_get_array_from_dict(_layers, "object"), scene_table, scene_index)
 	if not object_entries.is_empty():
-		layers_compact["n"] = object_entries
+		layers_compact["object"] = object_entries
 	return layers_compact
 
 static func _compact_tile_entries(entries: Array, name_table: Array[String], name_index: Dictionary) -> Array:
@@ -390,10 +282,14 @@ static func _compact_scene_entries(entries: Array, scene_table: Array[String], s
 		var fh := bool(entry.get("fh", false))
 		var fv := bool(entry.get("fv", false))
 		var flags := (rot & 3) | (4 if fh else 0) | (8 if fv else 0)
+		var data = entry.get("data", {})
+		if typeof(data) != TYPE_DICTIONARY:
+			data = {}
 		out.append(pos.x)
 		out.append(pos.y)
 		out.append(index)
 		out.append(flags)
+		out.append(data)
 	return out
 
 static func _encode_source_id(entry: Dictionary, name_table: Array[String], name_index: Dictionary) -> int:
@@ -413,17 +309,155 @@ static func _encode_source_id(entry: Dictionary, name_table: Array[String], name
 
 static func _expand_compact_layers(data: Dictionary, name_table: Array, scene_table: Array) -> Dictionary:
 	var _layers := _make_layers()
-	if data.has("d") and typeof(data["d"]) == TYPE_ARRAY:
-		_layers["hazard"] = _expand_tile_entries(data["d"], name_table)
-	if data.has("f") and typeof(data["f"]) == TYPE_ARRAY:
-		_layers["deco"] = _expand_tile_entries(data["f"], name_table)
-	if data.has("o") and typeof(data["o"]) == TYPE_ARRAY:
-		_layers["block"] = _expand_tile_entries(data["o"], name_table)
-	if data.has("t") and typeof(data["t"]) == TYPE_ARRAY:
-		_layers["terrain"] = _expand_terrain_entries(data["t"], name_table)
-	if data.has("n") and typeof(data["n"]) == TYPE_ARRAY:
-		_layers["object"] = _expand_scene_entries(data["n"], scene_table)
+	if data.has("hazard") and typeof(data["hazard"]) == TYPE_ARRAY:
+		_layers["hazard"] = _expand_tile_entries(data["hazard"], name_table)
+	if data.has("deco") and typeof(data["deco"]) == TYPE_ARRAY:
+		_layers["deco"] = _expand_tile_entries(data["deco"], name_table)
+	if data.has("block") and typeof(data["block"]) == TYPE_ARRAY:
+		_layers["block"] = _expand_tile_entries(data["block"], name_table)
+	if data.has("terrain") and typeof(data["terrain"]) == TYPE_ARRAY:
+		_layers["terrain"] = _expand_terrain_entries(data["terrain"], name_table)
+	if data.has("object") and typeof(data["object"]) == TYPE_ARRAY:
+		_layers["object"] = _expand_scene_entries(data["object"], scene_table)
 	return _layers
+
+func compute_verified_hash() -> String:
+	var parts: Array[String] = []
+	parts.append("spawn:%d,%d" % [spawn.x, spawn.y])
+	parts.append("chunks:%s" % _hash_chunks())
+	parts.append("layers:%s" % _hash_layers())
+	var ctx := HashingContext.new()
+	ctx.start(HashingContext.HASH_SHA256)
+	ctx.update(String("\n").join(parts).to_utf8_buffer())
+	return ctx.finish().hex_encode()
+
+func make_preview_map_data(view_px: Vector2i) -> MapData:
+	var tiles_w := int(ceil(view_px.x / float(TILE_SIZE)))
+	var tiles_h := int(ceil(view_px.y / float(TILE_SIZE)))
+	tiles_w = max(1, tiles_w)
+	tiles_h = max(1, tiles_h)
+
+	var spawn_chunk := get_chunk_at_tile(spawn)
+	if spawn_chunk == null and chunks.size() > 0:
+		spawn_chunk = chunks[0]
+	if spawn_chunk != null:
+		tiles_w = min(tiles_w, spawn_chunk.size.x)
+		tiles_h = min(tiles_h, spawn_chunk.size.y)
+		tiles_w = max(1, tiles_w)
+		tiles_h = max(1, tiles_h)
+
+	var center := Vector2(spawn) + Vector2(1, 1)
+	var half := Vector2(tiles_w, tiles_h) * 0.5
+	var min_x := int(floor(center.x - half.x))
+	var min_y := int(floor(center.y - half.y))
+	var max_x := min_x + tiles_w - 1
+	var max_y := min_y + tiles_h - 1
+
+	if spawn_chunk != null:
+		var chunk_min_x := spawn_chunk.pos.x
+		var chunk_min_y := spawn_chunk.pos.y
+		var chunk_max_x := spawn_chunk.pos.x + spawn_chunk.size.x - 1
+		var chunk_max_y := spawn_chunk.pos.y + spawn_chunk.size.y - 1
+		if min_x < chunk_min_x:
+			min_x = chunk_min_x
+			max_x = min_x + tiles_w - 1
+		if max_x > chunk_max_x:
+			max_x = chunk_max_x
+			min_x = max_x - tiles_w + 1
+		if min_y < chunk_min_y:
+			min_y = chunk_min_y
+			max_y = min_y + tiles_h - 1
+		if max_y > chunk_max_y:
+			max_y = chunk_max_y
+			min_y = max_y - tiles_h + 1
+
+	var offset := Vector2i(min_x, min_y)
+
+	var preview := MapData.new()
+	preview.metadata = metadata.duplicate(true)
+	preview.layers = _make_layers()
+	var chunk := ChunkData.new()
+	chunk.id = _make_chunk_id()
+	chunk.pos = Vector2i.ZERO
+	chunk.size = Vector2i(tiles_w, tiles_h)
+	preview.chunks.append(chunk)
+	preview.start_chunk_id = chunk.id
+	preview.spawn = Vector2i(spawn.x - offset.x, spawn.y - offset.y)
+	preview.spawn.x = clampi(preview.spawn.x, 0, max(0, tiles_w - 2))
+	preview.spawn.y = clampi(preview.spawn.y, 0, max(0, tiles_h - 2))
+
+	for layer_name in ["hazard", "deco", "block", "terrain", "object"]:
+		var entries: Array = layers.get(layer_name, [])
+		var out: Array = []
+		for item in entries:
+			if typeof(item) != TYPE_DICTIONARY:
+				continue
+			var entry: Dictionary = item
+			var pos := _vec2i_from_value(entry.get("pos", null))
+			if pos.x < min_x or pos.x > max_x or pos.y < min_y or pos.y > max_y:
+				continue
+			var new_entry: Dictionary = entry.duplicate(true)
+			new_entry["pos"] = [pos.x - offset.x, pos.y - offset.y]
+			out.append(new_entry)
+		preview.layers[layer_name] = out
+	return preview
+
+func _hash_chunks() -> String:
+	var chunk_items: Array[String] = []
+	for chunk in chunks:
+		chunk_items.append("%d,%d,%d,%d" % [chunk.pos.x, chunk.pos.y, chunk.size.x, chunk.size.y])
+	chunk_items.sort()
+	return String("|").join(chunk_items)
+
+func _hash_layers() -> String:
+	var layer_order := ["hazard", "deco", "block", "terrain", "object"]
+	var layer_parts: Array[String] = []
+	for layer_name in layer_order:
+		var entries: Array = layers.get(layer_name, [])
+		var entry_parts: Array[String] = []
+		match layer_name:
+			"object":
+				for item in entries:
+					if typeof(item) != TYPE_DICTIONARY:
+						continue
+					var entry: Dictionary = item
+					var pos := _vec2i_from_value(entry.get("pos", null))
+					var scene_path := str(entry.get("scene", ""))
+					var rot := int(entry.get("rot", 0))
+					var fh := bool(entry.get("fh", false))
+					var fv := bool(entry.get("fv", false))
+					entry_parts.append("%d,%d,%s,%d,%d,%d" % [pos.x, pos.y, scene_path, rot, (1 if fh else 0), (1 if fv else 0)])
+			"terrain":
+				for item in entries:
+					if typeof(item) != TYPE_DICTIONARY:
+						continue
+					var entry: Dictionary = item
+					var pos := _vec2i_from_value(entry.get("pos", null))
+					var source_id := _encode_source_id_for_hash(entry)
+					entry_parts.append("%d,%d,%s" % [pos.x, pos.y, source_id])
+			_:
+				for item in entries:
+					if typeof(item) != TYPE_DICTIONARY:
+						continue
+					var entry: Dictionary = item
+					var pos := _vec2i_from_value(entry.get("pos", null))
+					var source_id := _encode_source_id_for_hash(entry)
+					var atlas := _vec2i_from_value(entry.get("atlas", [0, 0]))
+					var alt := int(entry.get("alt", 0))
+					entry_parts.append("%d,%d,%s,%d,%d,%d" % [pos.x, pos.y, source_id, atlas.x, atlas.y, alt])
+		entry_parts.sort()
+		layer_parts.append("%s=%s" % [layer_name, String("|").join(entry_parts)])
+	return String(";").join(layer_parts)
+
+static func _encode_source_id_for_hash(entry: Dictionary) -> String:
+	if entry.has("source_id"):
+		var raw_id = entry.get("source_id", INVALID_SOURCE_ID)
+		if typeof(raw_id) == TYPE_INT or typeof(raw_id) == TYPE_FLOAT:
+			return "id:%d" % int(raw_id)
+	var source_name := str(entry.get("source", ""))
+	if source_name != "":
+		return "name:%s" % source_name
+	return "id:%d" % INVALID_SOURCE_ID
 
 static func _expand_tile_entries(raw: Array, name_table: Array) -> Array:
 	var out: Array = []
@@ -479,77 +513,35 @@ static func _expand_terrain_entries(raw: Array, name_table: Array) -> Array:
 static func _expand_scene_entries(raw: Array, scene_table: Array) -> Array:
 	var out: Array = []
 	var idx := 0
-	var stride := 4
-	if raw.size() % 4 != 0 and raw.size() % 3 == 0:
-		stride = 3
-	while idx + (stride - 1) < raw.size():
+	while idx + 3 < raw.size():
 		var x := int(raw[idx])
 		var y := int(raw[idx + 1])
 		var scene_idx := int(raw[idx + 2])
 		if scene_idx < 0 or scene_idx >= scene_table.size():
-			idx += stride
+			idx += 4
+			if idx < raw.size() and typeof(raw[idx]) == TYPE_DICTIONARY:
+				idx += 1
 			continue
 		var entry := {
 			"pos": [x, y],
 			"scene": str(scene_table[scene_idx]),
 		}
-		if stride == 4:
-			var flags := int(raw[idx + 3])
-			var rot := flags & 3
-			var fh := (flags & 4) != 0
-			var fv := (flags & 8) != 0
-			entry["rot"] = rot
-			entry["fh"] = fh
-			entry["fv"] = fv
+		var flags := int(raw[idx + 3])
+		var rot := flags & 3
+		var fh := (flags & 4) != 0
+		var fv := (flags & 8) != 0
+		entry["rot"] = rot
+		entry["fh"] = fh
+		entry["fv"] = fv
+		idx += 4
+		var data := {}
+		if idx < raw.size() and typeof(raw[idx]) == TYPE_DICTIONARY:
+			data = raw[idx]
+			idx += 1
+		if typeof(data) == TYPE_DICTIONARY and not data.is_empty():
+			entry["data"] = data
 		out.append(entry)
-		idx += stride
 	return out
-
-static func _merge_layers(target: Dictionary, source: Dictionary, offset: Vector2i) -> void:
-	_append_layer_entries(target, source, "object", offset)
-	_append_layer_entries(target, source, "deco", offset)
-	_append_layer_entries(target, source, "block", offset)
-	_append_layer_entries(target, source, "terrain", offset)
-	_append_layer_entries(target, source, "hazard", offset)
-
-	if source.has("scene") and typeof(source["scene"]) == TYPE_ARRAY:
-		var object_dst: Array = target.get("object", [])
-		_append_entries_with_offset(object_dst, source["scene"], offset)
-		target["object"] = object_dst
-	if source.has("fg") and typeof(source["fg"]) == TYPE_ARRAY:
-		var deco_dst: Array = target.get("deco", [])
-		_append_entries_with_offset(deco_dst, source["fg"], offset)
-		target["deco"] = deco_dst
-	if source.has("damage") and typeof(source["damage"]) == TYPE_ARRAY:
-		var hazard_dst: Array = target.get("hazard", [])
-		_append_entries_with_offset(hazard_dst, source["damage"], offset)
-		target["hazard"] = hazard_dst
-	if source.has("collision") and typeof(source["collision"]) == TYPE_DICTIONARY:
-		var collision_src: Dictionary = source["collision"]
-		var block_dst: Array = target.get("block", [])
-		_append_entries_with_offset(block_dst, _get_array_from_dict(collision_src, "tiles"), offset)
-		target["block"] = block_dst
-		var terrain_dst: Array = target.get("terrain", [])
-		_append_entries_with_offset(terrain_dst, _get_array_from_dict(collision_src, "terrain"), offset)
-		target["terrain"] = terrain_dst
-
-static func _append_layer_entries(target: Dictionary, source: Dictionary, key: String, offset: Vector2i) -> void:
-	var source_entries := _get_array_from_dict(source, key)
-	if source_entries.is_empty():
-		return
-	var target_entries: Array = target.get(key, [])
-	_append_entries_with_offset(target_entries, source_entries, offset)
-	target[key] = target_entries
-
-static func _append_entries_with_offset(target: Array, source: Array, offset: Vector2i) -> void:
-	for item in source:
-		if typeof(item) != TYPE_DICTIONARY:
-			continue
-		var entry: Dictionary = item
-		var pos := _vec2i_from_value(entry.get("pos", null)) + offset
-		var new_entry := entry.duplicate(true)
-		new_entry["pos"] = [pos.x, pos.y]
-		target.append(new_entry)
 
 static func _set_default_spawn(map: MapData) -> void:
 	var start_chunk := map.get_chunk_by_id(map.start_chunk_id)

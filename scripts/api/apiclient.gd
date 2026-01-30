@@ -2,9 +2,8 @@ extends Node
 
 const client_version: String = "0.0.1"
 
-var base_url := "http://127.0.0.1:8000"
+var base_url := "https://smallkitty.p-e.kr"
 var debug_log := false
-
 var access_token: String = ""
 var refresh_token: String = ""
 var me: Dictionary
@@ -12,6 +11,7 @@ var is_server_down = false
 
 func _ready() -> void:
 	base_url = _resolve_base_url()
+	print(base_url)
 	_check_server_health()
 
 func set_base_url(url: String) -> void:
@@ -37,7 +37,7 @@ func _build_headers(extra_headers: PackedStringArray = PackedStringArray()) -> P
 			break
 	if not has_content_type:
 		headers.append("Content-Type: application/json")
-	headers.append("User-Agent: OzProject-Godot/" + client_version)
+	headers.append("User-Agent: SmallKitty-Godot/" + client_version)
 	headers.append("X-Client-Version: " + client_version)
 
 	if access_token != "":
@@ -69,11 +69,15 @@ func _make_url(path: String) -> String:
 func _resolve_base_url() -> String:
 	var env_url := OS.get_environment("SMALLKITTY_API_URL")
 	if env_url != "":
+		print("env:" + env_url)
 		return env_url
 	var setting = ProjectSettings.get_setting("network/api_base_url", "")
-	if typeof(setting) == TYPE_STRING and str(setting) != "":
-		return str(setting)
+	if typeof(setting) == TYPE_STRING:
+		var trimmed := str(setting).strip_edges()
+		if trimmed != "":
+			return trimmed
 	return base_url
+
 
 
 func request_json(method: int, path: String, body: Variant = null, extra_headers: PackedStringArray = PackedStringArray()) -> Dictionary:

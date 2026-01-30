@@ -5,7 +5,7 @@
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_3j8p2"]
 atlas = ExtResource("1_24fh1")
-region = Rect2(0, 0, 8.405556, 8.07308)
+region = Rect2(0, 0, 8, 8)
 
 [sub_resource type="Gradient" id="Gradient_24fh1"]
 offsets = PackedFloat32Array(0.65273315, 1)
@@ -124,7 +124,6 @@ animations = [{
 size = Vector2(10, 10)
 
 [node name="DashOrb" type="Area2D" node_paths=PackedStringArray("anim", "passive_particles", "break_particles")]
-position = Vector2(-4, -4)
 monitorable = false
 script = ExtResource("3_qwxs5")
 anim = NodePath("Sprite2D")
@@ -133,7 +132,6 @@ break_particles = NodePath("Break")
 icon = SubResource("AtlasTexture_3j8p2")
 
 [node name="Passive" type="CPUParticles2D" parent="."]
-position = Vector2(4, 4)
 lifetime = 0.15000000000000002
 speed_scale = 0.1
 spread = 180.0
@@ -144,7 +142,6 @@ color = Color(0.8980392, 0.8784314, 0.49411765, 1)
 color_ramp = SubResource("Gradient_24fh1")
 
 [node name="Break" type="CPUParticles2D" parent="."]
-position = Vector2(4, 4)
 emitting = false
 amount = 20
 lifetime = 0.3
@@ -159,12 +156,10 @@ color_ramp = SubResource("Gradient_24fh1")
 
 [node name="Sprite2D" type="AnimatedSprite2D" parent="."]
 texture_filter = 1
-position = Vector2(4, 4)
 sprite_frames = SubResource("SpriteFrames_kphgr")
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 texture_filter = 1
-position = Vector2(4, 4)
 shape = SubResource("RectangleShape2D_ilyt3")
 
 [connection signal="body_entered" from="." to="." method="_on_body_entered"]

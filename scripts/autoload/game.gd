@@ -2,9 +2,16 @@ extends Node
 
 const WIP_DIR := "user://maps/wip"
 const DOWNLOADED_DIR := "user://maps"
+const CACHE_DIR := "user://maps/cache"
+const MAP_CACHE_DIR := "user://maps/cache/maps"
+const PREVIEW_CACHE_DIR := "user://maps/cache/previews"
+const CACHE_META_DIR := "user://maps/cache/meta"
 
 var current_map_path: String = ""
 var current_map_id: String = ""
+var last_play_map_id: String = ""
+var last_editor_map_path: String = ""
+var return_scene: String = ""
 var current_map_data: MapData
 var map_cache: Dictionary = {}
 var random_bg_path: String = ""
@@ -19,6 +26,10 @@ func _ready() -> void:
 func ensure_dirs() -> void:
 	DirAccess.make_dir_recursive_absolute(WIP_DIR)
 	DirAccess.make_dir_recursive_absolute(DOWNLOADED_DIR)
+	DirAccess.make_dir_recursive_absolute(CACHE_DIR)
+	DirAccess.make_dir_recursive_absolute(MAP_CACHE_DIR)
+	DirAccess.make_dir_recursive_absolute(PREVIEW_CACHE_DIR)
+	DirAccess.make_dir_recursive_absolute(CACHE_META_DIR)
 
 func cache_map(map_id: String, map_data: MapData) -> void:
 	if map_id == "" or map_data == null:

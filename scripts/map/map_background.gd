@@ -66,7 +66,7 @@ func _set_background_from_map(map_data: MapData) -> bool:
 		return false
 	var bg_name := str(map_data.metadata.get("bg", ""))
 	if bg_name == "":
-		return false
+		bg_name = "black.png"
 	var path := "res://graphics/backgrounds/%s" % bg_name
 	if ResourceLoader.exists(path):
 		fallback.texture = load(path)
@@ -110,3 +110,4 @@ func _get_target_size() -> Vector2:
 	if _follow_camera != null:
 		size /= _follow_camera.zoom
 	return size
+

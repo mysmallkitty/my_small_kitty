@@ -1,14 +1,16 @@
-[gd_scene load_steps=10 format=3 uid="uid://bpfpfirn2b13r"]
+[gd_scene load_steps=12 format=3 uid="uid://bpfpfirn2b13r"]
 
 [ext_resource type="Script" uid="uid://cgy33tbyoje6b" path="res://scripts/ui/user_profile_detail.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_uavsx"]
+[ext_resource type="Texture2D" uid="uid://cpkshvhn82bsc" path="res://graphics/ui/flags/unknown.png" id="3_ac3mq"]
 [ext_resource type="Texture2D" uid="uid://dwlfytf3pw08i" path="res://graphics/ui/8px/play.png" id="3_hxnar"]
-[ext_resource type="Texture2D" uid="uid://cvnwpmqvmlfdp" path="res://graphics/ui/flags/unkown.png" id="3_uavsx"]
 [ext_resource type="Texture2D" uid="uid://ctd672p5crq2a" path="res://graphics/ui/8px/flag.png" id="4_ac3mq"]
 [ext_resource type="Texture2D" uid="uid://b4v5ol2j3hr8o" path="res://graphics/ui/8px/death.png" id="5_0iowf"]
 [ext_resource type="Texture2D" uid="uid://dk1kne37x0h03" path="res://graphics/ui/8px/calander.png" id="6_xe8ob"]
 [ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="8_tybc6"]
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="9_ga5xi"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="10_65g8n"]
+[ext_resource type="Texture2D" uid="uid://cdb1r6yfycofa" path="res://graphics/ui/16px/user_guest.png" id="11_hxnar"]
 
 [node name="UserProfileDetail" type="Control"]
 layout_mode = 3
@@ -27,31 +29,31 @@ theme = ExtResource("1_uavsx")
 
 [node name="CountryFlag" type="TextureRect" parent="."]
 layout_mode = 0
-offset_left = 9.0
-offset_top = 8.0
-offset_right = 24.0
-offset_bottom = 18.0
-texture = ExtResource("3_uavsx")
+offset_left = 7.0
+offset_top = 6.0
+offset_right = 23.0
+offset_bottom = 16.0
+texture = ExtResource("3_ac3mq")
 expand_mode = 1
 
 [node name="Username" type="Label" parent="."]
 layout_mode = 0
-offset_left = 27.0
-offset_top = 10.0
-offset_right = 122.0
-offset_bottom = 17.0
+offset_left = 25.0
+offset_top = 18.0
+offset_right = 126.0
+offset_bottom = 25.0
 theme_override_font_sizes/font_size = 7
 text = "player"
 clip_text = true
 
 [node name="Rank" type="Label" parent="."]
 layout_mode = 0
-offset_left = 9.0
-offset_top = 20.0
-offset_right = 121.0
-offset_bottom = 27.0
+offset_left = 25.0
+offset_top = 26.0
+offset_right = 106.0
+offset_bottom = 33.0
 theme_override_font_sizes/font_size = 7
-text = "#0"
+text = "#0 (0000pp)"
 clip_text = true
 
 [node name="Play" type="Sprite2D" parent="."]
@@ -117,3 +119,8 @@ offset_top = 7.0
 offset_right = 129.0
 offset_bottom = 23.0
 icon_texture = ExtResource("9_ga5xi")
+click_sound = ExtResource("10_65g8n")
+
+[node name="ProfilePic" type="Sprite2D" parent="."]
+position = Vector2(15, 25)
+texture = ExtResource("11_hxnar")

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cmkvqp25wa8xv"
-path="res://.godot/imported/template2.png-bb9dafc260f206e2996fa66a4145f78c.ctex"
+uid="uid://urfbk4d1tcf8"
+path="res://.godot/imported/check_disabled.png-62bcab2e7b98758797089eac5f83cd8b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://graphics/tiles/template2.png"
-dest_files=["res://.godot/imported/template2.png-bb9dafc260f206e2996fa66a4145f78c.ctex"]
+source_file="res://graphics/ui/buttons/check_disabled.png"
+dest_files=["res://.godot/imported/check_disabled.png-62bcab2e7b98758797089eac5f83cd8b.ctex"]
 
 [params]
 

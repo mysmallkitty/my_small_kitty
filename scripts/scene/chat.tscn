@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://1877q1fej8v1"]
+
+[ext_resource type="Script" uid="uid://cck1koh80ervm" path="res://scripts/scene/chat.gd" id="1_mtmcl"]
+
+[node name="Chat" type="Label"]
+horizontal_alignment = 1
+script = ExtResource("1_mtmcl")

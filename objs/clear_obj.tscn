@@ -1,0 +1,99 @@
+[gd_scene load_steps=9 format=3 uid="uid://dk33owbk5gdl1"]
+
+[ext_resource type="Script" uid="uid://cv1qyehswe6l" path="res://scripts/api/services/clear_obj.gd" id="1_83xep"]
+[ext_resource type="Texture2D" uid="uid://b4sdju6kul0qy" path="res://graphics/objects/finish.png" id="2_k04la"]
+[ext_resource type="AudioStream" uid="uid://k54msnrec64c" path="res://audio/clear.wav" id="3_xy7hk"]
+[ext_resource type="Shader" uid="uid://duqeyxcbp55bs" path="res://objs/wave.gdshader" id="4_kkfxf"]
+
+[sub_resource type="Gradient" id="Gradient_24fh1"]
+offsets = PackedFloat32Array(0.65273315, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pmf6y"]
+shader = ExtResource("4_kkfxf")
+shader_parameter/waveAmplitude = 0.30000001425
+shader_parameter/correctVertex = true
+shader_parameter/waveFrequency = 5.0000002375
+shader_parameter/verticalWave = true
+shader_parameter/keepTransparency = true
+shader_parameter/useTime = true
+shader_parameter/waveSpeed = 1.0
+shader_parameter/progress = 0.0
+shader_parameter/firstHalf = 0.5
+shader_parameter/secondHalf = 0.5
+shader_parameter/freezeFirstHalf = false
+shader_parameter/freezeSecondHalf = false
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_kphgr"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_k04la")
+}],
+"loop": false,
+"name": &"break",
+"speed": 24.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_k04la")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_k04la")
+}],
+"loop": false,
+"name": &"regen",
+"speed": 25.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ilyt3"]
+size = Vector2(10, 6)
+
+[node name="ClearOrb" type="Area2D" node_paths=PackedStringArray("anim", "passive_particles", "break_particles")]
+monitorable = false
+script = ExtResource("1_83xep")
+anim = NodePath("Sprite2D")
+passive_particles = NodePath("Passive")
+break_particles = NodePath("Break")
+icon = ExtResource("2_k04la")
+sfx = ExtResource("3_xy7hk")
+
+[node name="Passive" type="CPUParticles2D" parent="."]
+lifetime = 0.15000000000000002
+speed_scale = 0.1
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 33.52
+initial_velocity_max = 72.62
+color = Color(0.29803923, 1, 1, 1)
+color_ramp = SubResource("Gradient_24fh1")
+
+[node name="Break" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 20
+lifetime = 0.3
+one_shot = true
+preprocess = 0.2
+spread = 180.0
+gravity = Vector2(0, 30)
+initial_velocity_min = 20.21
+initial_velocity_max = 50.51
+color = Color(0.29803923, 1, 1, 1)
+color_ramp = SubResource("Gradient_24fh1")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+material = SubResource("ShaderMaterial_pmf6y")
+sprite_frames = SubResource("SpriteFrames_kphgr")
+animation = &"break"
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+texture_filter = 1
+shape = SubResource("RectangleShape2D_ilyt3")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

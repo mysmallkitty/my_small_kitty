@@ -1,11 +1,12 @@
-[gd_scene load_steps=7 format=3 uid="uid://ore1bbwl67gk"]
+[gd_scene load_steps=8 format=3 uid="uid://ore1bbwl67gk"]
 
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_m5vwo"]
-[ext_resource type="Script" uid="uid://dn25igyfb8oej" path="res://scripts/ui/popup_panel.gd" id="1_popup"]
+[ext_resource type="Script" uid="uid://b2r6h8ymfttv8" path="res://scripts/map/select/panels/map_select_create_panel.gd" id="2_c4fkq"]
 [ext_resource type="PackedScene" uid="uid://dli2pb8ippthn" path="res://ui/button_big.tscn" id="2_h8tf7"]
 [ext_resource type="Texture2D" uid="uid://inl8krwstv4p" path="res://graphics/ui/16px/file_add.png" id="3_j4fk4"]
 [ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="4_bjt2m"]
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="5_c4fkq"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="7_xt5pn"]
 
 [node name="CreateNewMap" type="Control"]
 visible = false
@@ -18,7 +19,7 @@ offset_bottom = -79.0
 grow_horizontal = 2
 grow_vertical = 2
 theme = ExtResource("1_m5vwo")
-script = ExtResource("1_popup")
+script = ExtResource("2_c4fkq")
 
 [node name="Panel" type="Panel" parent="."]
 layout_mode = 0
@@ -54,6 +55,7 @@ offset_top = 4.0
 offset_right = 124.0
 offset_bottom = 20.0
 icon_texture = ExtResource("5_c4fkq")
+click_sound = ExtResource("7_xt5pn")
 
 [node name="TitleLabel" type="Label" parent="."]
 layout_mode = 0

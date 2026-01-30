@@ -1,5 +1,6 @@
-[gd_scene load_steps=13 format=3 uid="uid://bv0egmoo6ylfl"]
+[gd_scene load_steps=16 format=3 uid="uid://bv0egmoo6ylfl"]
 
+[ext_resource type="Script" uid="uid://bqgc7cjonjv2l" path="res://scripts/map/select/panels/map_select_detail_play.gd" id="1_detail_script"]
 [ext_resource type="PackedScene" uid="uid://uhe6twg0cfbr" path="res://ui/difficulty_icon.tscn" id="2_84q71"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="3_khn4t"]
 [ext_resource type="PackedScene" uid="uid://dli2pb8ippthn" path="res://ui/button_big.tscn" id="4_asyx0"]
@@ -8,7 +9,9 @@
 [ext_resource type="Texture2D" uid="uid://dwlfytf3pw08i" path="res://graphics/ui/8px/play.png" id="7_sxi1p"]
 [ext_resource type="Texture2D" uid="uid://dk1kne37x0h03" path="res://graphics/ui/8px/calander.png" id="7_vpl53"]
 [ext_resource type="Texture2D" uid="uid://ctd672p5crq2a" path="res://graphics/ui/8px/flag.png" id="8_vpl53"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="9_84q71"]
 [ext_resource type="Texture2D" uid="uid://r283sjscesrm" path="res://graphics/ui/8px/crown.png" id="9_l1skm"]
+[ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="10_clar3"]
 [ext_resource type="Texture2D" uid="uid://c3j1ean530x1r" path="res://graphics/ui/16px/play.png" id="10_vpl53"]
 [ext_resource type="Texture2D" uid="uid://cvsm2biosg2mh" path="res://graphics/ui/8px/simple/user.png" id="11_4cw08"]
 [ext_resource type="Texture2D" uid="uid://ljfq8v8lgyew" path="res://graphics/ui/8px/heart_empty.png" id="12_84q71"]
@@ -19,6 +22,7 @@ anchors_preset = 0
 offset_right = 144.0
 offset_bottom = 76.0
 theme = ExtResource("3_khn4t")
+script = ExtResource("1_detail_script")
 
 [node name="Panel" type="Panel" parent="."]
 texture_filter = 1
@@ -47,7 +51,7 @@ modulate = Color(0.5689727, 0.56897277, 0.5689727, 1)
 layout_mode = 0
 offset_left = 24.0
 offset_top = 17.0
-offset_right = 135.0
+offset_right = 136.0
 offset_bottom = 24.0
 theme = ExtResource("3_khn4t")
 vertical_alignment = 1
@@ -106,12 +110,24 @@ theme = ExtResource("3_khn4t")
 clip_text = true
 
 [node name="LeaderBoardButton" parent="Panel" instance=ExtResource("5_sa022")]
+visible = false
 layout_mode = 0
 offset_left = 77.0
 offset_top = 55.0
 offset_right = 93.0
 offset_bottom = 71.0
 icon_texture = ExtResource("9_l1skm")
+click_sound = ExtResource("9_84q71")
+
+[node name="DeleteMapFromServer" parent="Panel" instance=ExtResource("5_sa022")]
+visible = false
+layout_mode = 0
+offset_left = 124.0
+offset_top = 22.0
+offset_right = 140.0
+offset_bottom = 38.0
+icon_texture = ExtResource("10_clar3")
+click_sound = ExtResource("9_84q71")
 
 [node name="StatsButton" parent="Panel" instance=ExtResource("5_sa022")]
 layout_mode = 0
@@ -120,6 +136,7 @@ offset_top = 55.0
 offset_right = 112.0
 offset_bottom = 71.0
 icon_texture = ExtResource("11_4cw08")
+click_sound = ExtResource("9_84q71")
 
 [node name="LovedButton" parent="Panel" instance=ExtResource("5_sa022")]
 layout_mode = 0
@@ -128,6 +145,7 @@ offset_top = 4.0
 offset_right = 140.0
 offset_bottom = 20.0
 icon_texture = ExtResource("12_84q71")
+click_sound = ExtResource("9_84q71")
 
 [node name="PlayButton" parent="Panel" instance=ExtResource("4_asyx0")]
 layout_mode = 1
@@ -136,3 +154,11 @@ offset_top = 37.892
 offset_right = 133.672
 offset_bottom = 61.892
 icon_texture = ExtResource("10_vpl53")
+
+[node name="Rating" type="Label" parent="Panel"]
+layout_mode = 0
+offset_left = 5.0
+offset_top = 4.0
+offset_right = 21.0
+offset_bottom = 11.0
+horizontal_alignment = 1

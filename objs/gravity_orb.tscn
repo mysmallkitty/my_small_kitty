@@ -1,0 +1,165 @@
+[gd_scene load_steps=21 format=3 uid="uid://r2bp6uep7con"]
+
+[ext_resource type="Script" uid="uid://juql84yvld85" path="res://scripts/api/services/gravity_orb.gd" id="1_0oh5q"]
+[ext_resource type="Texture2D" uid="uid://cvxmpwo0a18ub" path="res://graphics/objects/jump_orb.png" id="2_0oh5q"]
+[ext_resource type="Texture2D" uid="uid://05u41a28ejgm" path="res://graphics/objects/gravity_orb.png" id="2_6q1v4"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_0oh5q"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 0, 8, 8)
+
+[sub_resource type="Gradient" id="Gradient_24fh1"]
+offsets = PackedFloat32Array(0.65273315, 1)
+colors = PackedColorArray(1, 1, 1, 1, 1, 1, 1, 0)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_ilyt3"]
+size = Vector2(10, 10)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_y3af2"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 8, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_m20ih"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 16, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bndnf"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 24, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_6gawc"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 32, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gggw5"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 40, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_sewa0"]
+atlas = ExtResource("2_0oh5q")
+region = Rect2(0, 40, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_arwxe"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 0, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_88acu"]
+atlas = ExtResource("2_0oh5q")
+region = Rect2(0, 40, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_kdhcv"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 32, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ucav1"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 24, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_nisy6"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 16, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_athhp"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 8, 8, 8)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_fvuyu"]
+atlas = ExtResource("2_6q1v4")
+region = Rect2(0, 0, 8, 8)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_kphgr"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_y3af2")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_m20ih")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_bndnf")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_6gawc")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gggw5")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_sewa0")
+}],
+"loop": false,
+"name": &"break",
+"speed": 24.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_arwxe")
+}],
+"loop": true,
+"name": &"default",
+"speed": 24.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_88acu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_kdhcv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ucav1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_nisy6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_athhp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_fvuyu")
+}],
+"loop": false,
+"name": &"regen",
+"speed": 25.0
+}]
+
+[node name="gravity_orb" type="Area2D" node_paths=PackedStringArray("anim", "passive_particles", "break_particles")]
+monitorable = false
+script = ExtResource("1_0oh5q")
+anim = NodePath("Sprite2D")
+passive_particles = NodePath("Passive")
+break_particles = NodePath("Break")
+icon = SubResource("AtlasTexture_0oh5q")
+
+[node name="Passive" type="CPUParticles2D" parent="."]
+lifetime = 0.15000000000000002
+speed_scale = 0.1
+spread = 180.0
+gravity = Vector2(0, 0)
+initial_velocity_min = 33.52
+initial_velocity_max = 72.62
+color = Color(0.49411765, 0.6666667, 0.9137255, 1)
+color_ramp = SubResource("Gradient_24fh1")
+
+[node name="Break" type="CPUParticles2D" parent="."]
+emitting = false
+amount = 20
+lifetime = 0.3
+one_shot = true
+preprocess = 0.2
+spread = 180.0
+gravity = Vector2(0, 30)
+initial_velocity_min = 20.21
+initial_velocity_max = 50.51
+color = Color(0.49411765, 0.6666667, 0.9137255, 1)
+color_ramp = SubResource("Gradient_24fh1")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("RectangleShape2D_ilyt3")
+
+[node name="Sprite2D" type="AnimatedSprite2D" parent="."]
+texture_filter = 1
+sprite_frames = SubResource("SpriteFrames_kphgr")
+
+[connection signal="body_entered" from="." to="." method="_on_body_entered"]

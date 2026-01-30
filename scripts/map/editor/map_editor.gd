@@ -2,6 +2,7 @@ class_name MapEditor
 extends Node2D
 
 enum Tool {
+	CURSOR,
 	PEN,
 	RECT,
 }
@@ -12,6 +13,7 @@ const ICON_CHUNK := preload("res://graphics/ui/16px/editor/tools/chunk.png")
 const ICON_CHUNK_ADD := preload("res://graphics/ui/16px/editor/tools/chunk_add.png")
 const ICON_CHUNK_REMOVE := preload("res://graphics/ui/16px/editor/tools/chunk_remove.png")
 const ICON_BACK := preload("res://graphics/ui/16px/nav_prev.png")
+const BACKGROUND_CATALOG := preload("res://scripts/map/editor/background_catalog.gd")
 
 const CHUNK_HANDLE_SIZE := 6.0
 const CHUNK_HANDLE_HIT := 10.0
@@ -44,6 +46,7 @@ var palette_root: Control
 @onready var hud: Control = $UI/Hud
 @onready var palette_panel: Control = $UI/Hud/Pallete
 @onready var background_sprite: Sprite2D = $EditorCamera/Fallback
+@onready var cursor_button: BaseButton = get_node_or_null("UI/Hud/Tools/CursorButton") as BaseButton
 @onready var pen_button: BaseButton = get_node_or_null("UI/Hud/Tools/PenButton") as BaseButton
 @onready var rect_button: BaseButton = get_node_or_null("UI/Hud/Tools/SquareButton") as BaseButton
 @onready var chunk_toggle: BaseButton = get_node_or_null("UI/Hud/Tools/ChunkButton") as BaseButton
@@ -59,36 +62,22 @@ var palette_root: Control
 @onready var editor_menu_bg_prev: BaseButton = get_node_or_null("UI/EditorMenu/BGPrevButton") as BaseButton
 @onready var editor_menu_bg_next: BaseButton = get_node_or_null("UI/EditorMenu/BGNextButton") as BaseButton
 @onready var editor_menu_diff_icon: TextureRect = get_node_or_null("UI/EditorMenu/DifficultyIcon") as TextureRect
+@onready var inspector_panel: Control = get_node_or_null("UI/InspectorPanel") as Control
+@onready var inspector_header: Label = get_node_or_null("UI/InspectorPanel/Header") as Label
+@onready var inspector_options: VBoxContainer = get_node_or_null("UI/InspectorPanel/Options") as VBoxContainer
+@onready var inspector_close: BaseButton = get_node_or_null("UI/InspectorPanel/CloseButton") as BaseButton
 
-var tool := Tool.PEN
-var selected_layer := ""
-var selected_source_id := TileCatalog.INVALID_SOURCE
-var selected_atlas := Vector2i.ZERO
-var selected_alt := 0
-var selected_scene_path := ""
-var rotate_steps := 0
-var flip_h := false
-var flip_v := false
-
-var is_painting := false
-var paint_button := MOUSE_BUTTON_LEFT
-var rect_active := false
-var rect_start := Vector2i.ZERO
-var rect_end := Vector2i.ZERO
-var last_paint_tile := INVALID_TILE
+var tile_tool: MapEditorTileTool
+var chunk_tool: MapEditorChunkTool
+var cursor_tool: MapEditorCursorTool
+var active_tool := Tool.PEN
+var cursor_rect := Rect2i()
+var cursor_rect_active := false
+var cursor_drag_offset := Vector2i.ZERO
 
 var chunk_edit_mode := false
 var selected_chunk: ChunkData
-var dragging_chunk := false
-var drag_start_tile := Vector2i.ZERO
-var drag_chunk_origin := Vector2i.ZERO
-var drag_chunk_size := Vector2i.ZERO
-var resizing_chunk := false
-var resize_handle := ""
 var _renderer_dirty := false
-var _terrain_dirty_min := Vector2i.ZERO
-var _terrain_dirty_max := Vector2i.ZERO
-var _terrain_dirty_valid := false
 
 var undo_stack: Array[Dictionary] = []
 var undo_limit := 50
@@ -98,13 +87,19 @@ var dragging_spawn := false
 var spawn_drag_offset := Vector2i.ZERO
 var _bg_list: Array[String] = []
 var _bg_index := 0
+var inspector_text: LineEdit
+var inspector_entry_index := -1
+var inspector_entry_pos := Vector2i.ZERO
 
 func _ready() -> void:
 	process_priority = 20
 	_load_map()
+	if map_path.strip_edges() != "":
+		Game.last_editor_map_path = map_path
 	_setup_camera()
 	_setup_renderer()
 	_setup_preview_layer()
+	_setup_tools()
 	_setup_spawn()
 	_connect_ui()
 	_build_palette()
@@ -114,11 +109,12 @@ func _ready() -> void:
 	queue_redraw()
 
 func _process(_delta: float) -> void:
-	_update_preview()
+	if tile_tool != null and active_tool != Tool.CURSOR:
+		tile_tool.update_preview()
 	_update_background_layout()
 	if _renderer_dirty:
 		_renderer_dirty = false
-		_refresh_renderer()
+		_refresh_renderer(true)
 	queue_redraw()
 
 func _draw() -> void:
@@ -153,8 +149,11 @@ func _ui_blocks_input(event: InputEvent) -> bool:
 	return false
 
 func _load_map() -> void:
-	if map_path.strip_edges() == "" and Game.current_map_path != "":
-		map_path = Game.current_map_path
+	if map_path.strip_edges() == "":
+		if Game.current_map_path != "":
+			map_path = Game.current_map_path
+		elif Game.last_editor_map_path != "":
+			map_path = Game.last_editor_map_path
 	if map_path.strip_edges() != "":
 		map_data = MapIO.load_map(map_path)
 		current_save_path = map_path
@@ -195,6 +194,15 @@ func _setup_preview_layer() -> void:
 	preview_layer.z_index = 100
 	preview_layer.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	preview_layer.modulate = Color(1, 1, 1, preview_alpha)
+
+func _setup_tools() -> void:
+	tile_tool = MapEditorTileTool.new()
+	tile_tool.setup(self)
+	tile_tool.set_tool(Tool.PEN)
+	chunk_tool = MapEditorChunkTool.new()
+	chunk_tool.setup(self)
+	cursor_tool = MapEditorCursorTool.new()
+	cursor_tool.setup(self)
 
 func _setup_spawn() -> void:
 	if spawn_scene == null:
@@ -265,13 +273,19 @@ func _connect_ui() -> void:
 		var tool_group := ButtonGroup.new()
 		pen_button.button_group = tool_group
 		rect_button.button_group = tool_group
+		if cursor_button != null:
+			cursor_button.button_group = tool_group
 		pen_button.toggle_mode = true
 		rect_button.toggle_mode = true
+		if cursor_button != null:
+			cursor_button.toggle_mode = true
 		pen_button.button_pressed = true
 		if not pen_button.toggled.is_connected(_on_pen_toggled):
 			pen_button.toggled.connect(_on_pen_toggled)
 		if not rect_button.toggled.is_connected(_on_rect_toggled):
 			rect_button.toggled.connect(_on_rect_toggled)
+		if cursor_button != null and not cursor_button.toggled.is_connected(_on_cursor_toggled):
+			cursor_button.toggled.connect(_on_cursor_toggled)
 		if not pen_button.pressed.is_connected(_on_new_chunk_pressed):
 			pen_button.pressed.connect(_on_new_chunk_pressed)
 		if not rect_button.pressed.is_connected(_on_chunk_delete_pressed):
@@ -285,6 +299,10 @@ func _connect_ui() -> void:
 		menu_button.pressed.connect(_on_menu_pressed)
 	_connect_editor_menu()
 	_update_chunk_ui()
+
+func _update_chunk_ui() -> void:
+	if chunk_tool != null:
+		chunk_tool.update_ui()
 
 func _connect_editor_menu() -> void:
 	if editor_menu == null:
@@ -547,19 +565,6 @@ func _make_tile_button(source_id: int, atlas_coords: Vector2i) -> BaseButton:
 		icon_rect.size = size
 	return button
 
-func _encode_tile_flags() -> int:
-	var flags := rotate_steps & 3
-	if flip_h:
-		flags |= 4
-	if flip_v:
-		flags |= 8
-	return flags
-
-func _get_preview_alt_id(flags: int) -> int:
-	if renderer == null:
-		return 0
-	return renderer.get_alt_id_for_flags(selected_source_id, selected_atlas, flags)
-
 func _instantiate_palette_button() -> BaseButton:
 	if palette_button_scene != null:
 		var instance = palette_button_scene.instantiate()
@@ -638,11 +643,12 @@ func _sort_coords_row_major(coords: Array[Vector2i]) -> Array[Vector2i]:
 func _handle_mouse_button(event: InputEventMouseButton) -> void:
 	if event.button_index == MOUSE_BUTTON_MIDDLE:
 		if event.pressed:
-			is_painting = false
-			dragging_chunk = false
+			if tile_tool != null:
+				tile_tool.is_painting = false
 			dragging_spawn = false
-			rect_active = false
-			_paint_end()
+			if tile_tool != null:
+				tile_tool.rect_active = false
+				tile_tool.paint_end()
 			_start_pan(event.position)
 		else:
 			_stop_pan()
@@ -664,17 +670,25 @@ func _handle_mouse_button(event: InputEventMouseButton) -> void:
 				return
 
 	if chunk_edit_mode:
-		_handle_chunk_edit_mouse_button(event)
+		if chunk_tool != null:
+			chunk_tool.handle_mouse_button(event)
+		return
+
+	if active_tool == Tool.CURSOR:
+		if cursor_tool != null:
+			cursor_tool.handle_mouse_button(event)
 		return
 
 	if event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT:
 		if event.pressed:
-			_start_paint(event.button_index)
+			if tile_tool != null:
+				tile_tool.start_paint(event.button_index)
 		else:
 			if dragging_spawn:
 				_end_spawn_drag()
 				return
-			_paint_end()
+			if tile_tool != null:
+				tile_tool.paint_end()
 
 func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	if _is_panning:
@@ -683,14 +697,15 @@ func _handle_mouse_motion(event: InputEventMouseMotion) -> void:
 	if dragging_spawn:
 		_update_spawn_drag()
 		return
-	if chunk_edit_mode and resizing_chunk:
-		_resize_chunk()
+	if chunk_edit_mode and chunk_tool != null:
+		chunk_tool.handle_mouse_motion(event)
 		return
-	if chunk_edit_mode and dragging_chunk:
-		_drag_chunk()
+	if active_tool == Tool.CURSOR:
+		if cursor_tool != null:
+			cursor_tool.handle_mouse_motion(event)
 		return
-	if is_painting:
-		_apply_paint_at_mouse()
+	if tile_tool != null and tile_tool.is_painting:
+		tile_tool.apply_paint_at_mouse()
 
 func _handle_key(event: InputEventKey) -> void:
 	if event.keycode == KEY_Z and event.ctrl_pressed:
@@ -698,250 +713,63 @@ func _handle_key(event: InputEventKey) -> void:
 	elif event.keycode == KEY_F5:
 		_save_map()
 	elif event.keycode == KEY_F3:
-		chunk_edit_mode = not chunk_edit_mode
+		if chunk_tool != null:
+			chunk_tool.set_edit_mode(not chunk_edit_mode)
 		if chunk_toggle != null:
 			chunk_toggle.button_pressed = chunk_edit_mode
-		_update_chunk_ui()
-	elif event.keycode == KEY_Z:
-		rotate_steps = (rotate_steps + 3) % 4
-	elif event.keycode == KEY_X:
-		rotate_steps = (rotate_steps + 1) % 4
-	elif event.keycode == KEY_C:
-		flip_h = not flip_h
-	elif event.keycode == KEY_V:
-		flip_v = not flip_v
-
-func _start_paint(button_index: int) -> void:
-	if selected_layer == "" and button_index != MOUSE_BUTTON_RIGHT:
-		return
-	is_painting = true
-	paint_button = button_index
-	last_paint_tile = INVALID_TILE
-	_terrain_dirty_valid = false
-	rect_active = tool == Tool.RECT
-	if rect_active:
-		rect_start = _get_mouse_tile()
-		rect_end = rect_start
-		_record_undo()
-	else:
-		_record_undo()
-		_apply_paint_at_mouse()
-
-func _paint_end() -> void:
-	if rect_active:
-		_apply_rect_paint()
-	rect_active = false
-	is_painting = false
-	last_paint_tile = INVALID_TILE
-	_flush_terrain_dirty()
-
-func _apply_paint_at_mouse() -> void:
-	var tile_pos := _get_mouse_tile()
-	if tile_pos == last_paint_tile:
-		return
-	var erase := paint_button == MOUSE_BUTTON_RIGHT
-	if last_paint_tile == INVALID_TILE:
-		_apply_paint(tile_pos, erase)
-	else:
-		for pos in _get_line_tiles(last_paint_tile, tile_pos):
-			_apply_paint(pos, erase)
-	last_paint_tile = tile_pos
-
-func _apply_rect_paint() -> void:
-	var min_x: int = int(min(rect_start.x, rect_end.x))
-	var max_x: int = int(max(rect_start.x, rect_end.x))
-	var min_y: int = int(min(rect_start.y, rect_end.y))
-	var max_y: int = int(max(rect_start.y, rect_end.y))
-	for x in range(min_x, max_x + 1):
-		for y in range(min_y, max_y + 1):
-			_apply_paint(Vector2i(x, y), paint_button == MOUSE_BUTTON_RIGHT)
-
-func _apply_paint(tile_pos: Vector2i, erase: bool) -> void:
-	if map_data == null:
-		return
-	if _is_in_spawn_area(tile_pos):
-		return
-	var local_pos := tile_pos
-	if erase:
-		_erase_topmost_at(local_pos)
-		return
-
-	match selected_layer:
-		"object":
-			var object_entries: Array = map_data.layers.get("object", [])
-			_remove_entry_at(object_entries, local_pos)
-			var scene_entry: Dictionary = {}
-			if selected_scene_path != "":
-				scene_entry = {
-					"pos": [local_pos.x, local_pos.y],
-					"scene": selected_scene_path,
-					"rot": rotate_steps,
-					"fh": flip_h,
-					"fv": flip_v,
-				}
-				object_entries.append(scene_entry)
-			map_data.layers["object"] = object_entries
-			_update_renderer_scene(local_pos, scene_entry)
-		"terrain":
-			var terrain_entries: Array = map_data.layers.get("terrain", [])
-			var block_entries: Array = map_data.layers.get("block", [])
-			_remove_entry_at(terrain_entries, local_pos)
-			_remove_entry_at(block_entries, local_pos)
-			var terrain_source_id := TileCatalog.INVALID_SOURCE
-			if selected_source_id != TileCatalog.INVALID_SOURCE:
-				terrain_entries.append({
-					"pos": [local_pos.x, local_pos.y],
-					"source_id": selected_source_id,
-				})
-				terrain_source_id = selected_source_id
-			map_data.layers["terrain"] = terrain_entries
-			map_data.layers["block"] = block_entries
-			_update_renderer_tile("block", local_pos, {})
-			_update_renderer_terrain(local_pos, terrain_source_id)
-			_mark_terrain_dirty(local_pos)
-		"block":
-			var block_entries: Array = map_data.layers.get("block", [])
-			var terrain_entries: Array = map_data.layers.get("terrain", [])
-			_remove_entry_at(block_entries, local_pos)
-			_remove_entry_at(terrain_entries, local_pos)
-			var tile_entry: Dictionary = {}
-			if selected_source_id != TileCatalog.INVALID_SOURCE:
-				tile_entry = {
-					"pos": [local_pos.x, local_pos.y],
-					"source_id": selected_source_id,
-					"atlas": [selected_atlas.x, selected_atlas.y],
-					"alt": _encode_tile_flags(),
-				}
-				block_entries.append(tile_entry)
-			map_data.layers["block"] = block_entries
-			map_data.layers["terrain"] = terrain_entries
-			_update_renderer_tile("block", local_pos, tile_entry)
-			_update_renderer_terrain(local_pos, TileCatalog.INVALID_SOURCE)
-			_mark_terrain_dirty(local_pos)
-		"hazard":
-			var hazard_entries: Array = map_data.layers.get("hazard", [])
-			_remove_entry_at(hazard_entries, local_pos)
-			var hazard_entry: Dictionary = {}
-			if selected_source_id != TileCatalog.INVALID_SOURCE:
-				hazard_entry = {
-					"pos": [local_pos.x, local_pos.y],
-					"source_id": selected_source_id,
-					"atlas": [selected_atlas.x, selected_atlas.y],
-					"alt": _encode_tile_flags(),
-				}
-				hazard_entries.append(hazard_entry)
-			map_data.layers["hazard"] = hazard_entries
-			_update_renderer_tile("hazard", local_pos, hazard_entry)
-		"deco":
-			var deco_entries: Array = map_data.layers.get("deco", [])
-			_remove_entry_at(deco_entries, local_pos)
-			var deco_entry: Dictionary = {}
-			if selected_source_id != TileCatalog.INVALID_SOURCE:
-				deco_entry = {
-					"pos": [local_pos.x, local_pos.y],
-					"source_id": selected_source_id,
-					"atlas": [selected_atlas.x, selected_atlas.y],
-					"alt": _encode_tile_flags(),
-				}
-				deco_entries.append(deco_entry)
-			map_data.layers["deco"] = deco_entries
-			_update_renderer_tile("deco", local_pos, deco_entry)
-		_:
-			return
-
-func _erase_topmost_at(local_pos: Vector2i) -> void:
-	var object_entries: Array = map_data.layers.get("object", [])
-	if _remove_entry_at(object_entries, local_pos):
-		map_data.layers["object"] = object_entries
-		_update_renderer_scene(local_pos, {})
-		return
-	var deco_entries: Array = map_data.layers.get("deco", [])
-	if _remove_entry_at(deco_entries, local_pos):
-		map_data.layers["deco"] = deco_entries
-		_update_renderer_tile("deco", local_pos, {})
-		return
-	var block_entries: Array = map_data.layers.get("block", [])
-	if _remove_entry_at(block_entries, local_pos):
-		map_data.layers["block"] = block_entries
-		_update_renderer_tile("block", local_pos, {})
-		return
-	var terrain_entries: Array = map_data.layers.get("terrain", [])
-	if _remove_entry_at(terrain_entries, local_pos):
-		map_data.layers["terrain"] = terrain_entries
-		_update_renderer_terrain(local_pos, TileCatalog.INVALID_SOURCE)
-		_mark_terrain_dirty(local_pos)
-		return
-	var hazard_entries: Array = map_data.layers.get("hazard", [])
-	if _remove_entry_at(hazard_entries, local_pos):
-		map_data.layers["hazard"] = hazard_entries
-		_update_renderer_tile("hazard", local_pos, {})
+		_set_active_tool(Tool.CURSOR if active_tool != Tool.CURSOR else Tool.PEN)
+	elif tile_tool != null:
+		tile_tool.handle_key(event)
 
 func _mark_renderer_dirty() -> void:
 	_renderer_dirty = true
 
-func _mark_terrain_dirty(pos: Vector2i) -> void:
-	if not _terrain_dirty_valid:
-		_terrain_dirty_valid = true
-		_terrain_dirty_min = pos
-		_terrain_dirty_max = pos
+func _sync_map_data_tile_layers() -> void:
+	if map_data == null:
 		return
-	_terrain_dirty_min = Vector2i(min(_terrain_dirty_min.x, pos.x), min(_terrain_dirty_min.y, pos.y))
-	_terrain_dirty_max = Vector2i(max(_terrain_dirty_max.x, pos.x), max(_terrain_dirty_max.y, pos.y))
+	if map_data.layers == null:
+		map_data.layers = MapData._make_layers()
+	map_data.layers["hazard"] = _build_tile_entries_from_layer("hazard", true)
+	map_data.layers["deco"] = _build_tile_entries_from_layer("deco", true)
+	map_data.layers["block"] = _build_tile_entries_from_layer("block", true)
+	map_data.layers["terrain"] = _build_tile_entries_from_layer("terrain", false)
 
-func _flush_terrain_dirty() -> void:
-	if not _terrain_dirty_valid:
-		return
-	if renderer == null:
-		_terrain_dirty_valid = false
-		return
-	renderer.rebuild_terrain_region(_terrain_dirty_min, _terrain_dirty_max)
-	_terrain_dirty_valid = false
-
-func _update_renderer_tile(layer_name: String, world_pos: Vector2i, entry: Dictionary) -> void:
-	if renderer == null:
-		_mark_renderer_dirty()
-		return
-	renderer.update_tile(layer_name, world_pos, entry)
-
-func _update_renderer_scene(world_pos: Vector2i, entry: Dictionary) -> void:
-	if renderer == null:
-		_mark_renderer_dirty()
-		return
-	renderer.update_scene(world_pos, entry)
-
-func _update_renderer_terrain(world_pos: Vector2i, source_id: int) -> void:
-	if renderer == null:
-		_mark_renderer_dirty()
-		return
-	renderer.update_terrain_cell(world_pos, source_id)
-
-func _get_line_tiles(from: Vector2i, to: Vector2i) -> Array[Vector2i]:
-	var out: Array[Vector2i] = []
-	var x0 = from.x
-	var y0 = from.y
-	var x1 = to.x
-	var y1 = to.y
-	var dx = abs(x1 - x0)
-	var sx = 1 if x0 < x1 else -1
-	var dy = -abs(y1 - y0)
-	var sy := 1 if y0 < y1 else -1
-	var err = dx + dy
-	while true:
-		out.append(Vector2i(x0, y0))
-		if x0 == x1 and y0 == y1:
-			break
-		var e2 = 2 * err
-		if e2 >= dy:
-			err += dy
-			x0 += sx
-		if e2 <= dx:
-			err += dx
-			y0 += sy
+func _build_tile_entries_from_layer(layer_name: String, include_alt: bool) -> Array:
+	var out: Array = []
+	var layer := _get_tile_layer(layer_name)
+	if layer == null:
+		return out
+	var used := layer.get_used_cells()
+	for cell in used:
+		var source_id := layer.get_cell_source_id(cell)
+		if source_id == TileCatalog.INVALID_SOURCE:
+			continue
+		if include_alt:
+			var atlas := layer.get_cell_atlas_coords(cell)
+			var alt := layer.get_cell_alternative_tile(cell)
+			out.append({
+				"pos": [cell.x, cell.y],
+				"source_id": source_id,
+				"atlas": [atlas.x, atlas.y],
+				"alt": alt,
+			})
+		else:
+			out.append({
+				"pos": [cell.x, cell.y],
+				"source_id": source_id,
+			})
 	return out
 
-func _refresh_renderer() -> void:
+func _get_tile_layer(layer_name: String) -> TileMapLayer:
+	if renderer == null:
+		return null
+	return renderer.get_tile_layer(layer_name)
+
+func _refresh_renderer(sync_tiles: bool = false) -> void:
 	if renderer == null:
 		return
+	if sync_tiles:
+		_sync_map_data_tile_layers()
 	renderer.render_map(map_data)
 
 func _remove_entry_at(entries: Array, local_pos: Vector2i) -> bool:
@@ -955,156 +783,6 @@ func _remove_entry_at(entries: Array, local_pos: Vector2i) -> bool:
 			entries.remove_at(i)
 			removed = true
 	return removed
-
-func _update_preview() -> void:
-	if preview_layer == null:
-		return
-	preview_layer.clear()
-	if selected_layer == "" or chunk_edit_mode or dragging_spawn:
-		return
-	if selected_layer == "object":
-		return
-	if selected_source_id == TileCatalog.INVALID_SOURCE:
-		return
-	var tile_pos := _get_mouse_tile()
-	if tool == Tool.RECT and rect_active:
-		var min_x: int = int(min(rect_start.x, rect_end.x))
-		var max_x: int = int(max(rect_start.x, rect_end.x))
-		var min_y: int = int(min(rect_start.y, rect_end.y))
-		var max_y: int = int(max(rect_start.y, rect_end.y))
-		for x in range(min_x, max_x + 1):
-			for y in range(min_y, max_y + 1):
-				var flags := _encode_tile_flags()
-				var alt_id := _get_preview_alt_id(flags)
-				preview_layer.set_cell(Vector2i(x, y), selected_source_id, selected_atlas, alt_id)
-	else:
-		var flags := _encode_tile_flags()
-		var alt_id := _get_preview_alt_id(flags)
-		preview_layer.set_cell(tile_pos, selected_source_id, selected_atlas, alt_id)
-
-func _draw_grid() -> void:
-	if camera == null:
-		return
-	var view_size := get_viewport_rect().size / camera.zoom
-	var center := camera.get_screen_center_position()
-	var top_left := center - view_size * 0.5
-	var bottom_right := center + view_size * 0.5
-	var start_x := int(floor(top_left.x / MapData.TILE_SIZE)) * MapData.TILE_SIZE
-	var end_x := int(ceil(bottom_right.x / MapData.TILE_SIZE)) * MapData.TILE_SIZE
-	var start_y := int(floor(top_left.y / MapData.TILE_SIZE)) * MapData.TILE_SIZE
-	var end_y := int(ceil(bottom_right.y / MapData.TILE_SIZE)) * MapData.TILE_SIZE
-	for x in range(start_x, end_x + 1, MapData.TILE_SIZE):
-		draw_line(Vector2(x, start_y), Vector2(x, end_y), grid_color, 1.0)
-	for y in range(start_y, end_y + 1, MapData.TILE_SIZE):
-		draw_line(Vector2(start_x, y), Vector2(end_x, y), grid_color, 1.0)
-
-func _draw_chunks() -> void:
-	var start_chunk := map_data.get_chunk_by_id(map_data.start_chunk_id)
-	for chunk in map_data.chunks:
-		var rect := _chunk_rect_pixels(chunk)
-		var color := chunk_color
-		if chunk == selected_chunk:
-			color = chunk_selected_color
-		draw_rect(rect, color, false, 2.0)
-		if chunk == start_chunk:
-			var spawn_px := Vector2(map_data.spawn) * MapData.TILE_SIZE
-			draw_rect(Rect2(spawn_px, Vector2(MapData.TILE_SIZE * 2, MapData.TILE_SIZE * 2)), color, false, 2.0)
-		if chunk_edit_mode:
-			if chunk == selected_chunk:
-				_draw_chunk_handles(chunk)
-
-func _chunk_rect_pixels(chunk: ChunkData) -> Rect2:
-	return Rect2(Vector2(chunk.pos) * MapData.TILE_SIZE, Vector2(chunk.size) * MapData.TILE_SIZE)
-
-func _draw_chunk_handles(chunk: ChunkData) -> void:
-	var rect := _chunk_rect_pixels(chunk)
-	var half := CHUNK_HANDLE_SIZE * 0.5
-	var handle_color := chunk_selected_color
-	var left_mid := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5)
-	var right_mid := Vector2(rect.position.x + rect.size.x, rect.position.y + rect.size.y * 0.5)
-	var top_mid := Vector2(rect.position.x + rect.size.x * 0.5, rect.position.y)
-	var bottom_mid := Vector2(rect.position.x + rect.size.x * 0.5, rect.position.y + rect.size.y)
-	draw_rect(Rect2(left_mid - Vector2(half, half), Vector2(CHUNK_HANDLE_SIZE, CHUNK_HANDLE_SIZE)), handle_color, true)
-	draw_rect(Rect2(right_mid - Vector2(half, half), Vector2(CHUNK_HANDLE_SIZE, CHUNK_HANDLE_SIZE)), handle_color, true)
-	draw_rect(Rect2(top_mid - Vector2(half, half), Vector2(CHUNK_HANDLE_SIZE, CHUNK_HANDLE_SIZE)), handle_color, true)
-	draw_rect(Rect2(bottom_mid - Vector2(half, half), Vector2(CHUNK_HANDLE_SIZE, CHUNK_HANDLE_SIZE)), handle_color, true)
-
-func _get_chunk_handle_at_pos(chunk: ChunkData, world_pos: Vector2) -> String:
-	var rect := _chunk_rect_pixels(chunk)
-	var hit := CHUNK_HANDLE_HIT
-	var half := hit * 0.5
-	var left_mid := Vector2(rect.position.x, rect.position.y + rect.size.y * 0.5)
-	var right_mid := Vector2(rect.position.x + rect.size.x, rect.position.y + rect.size.y * 0.5)
-	var top_mid := Vector2(rect.position.x + rect.size.x * 0.5, rect.position.y)
-	var bottom_mid := Vector2(rect.position.x + rect.size.x * 0.5, rect.position.y + rect.size.y)
-	if Rect2(left_mid - Vector2(half, half), Vector2(hit, hit)).has_point(world_pos):
-		return "left"
-	if Rect2(right_mid - Vector2(half, half), Vector2(hit, hit)).has_point(world_pos):
-		return "right"
-	if Rect2(top_mid - Vector2(half, half), Vector2(hit, hit)).has_point(world_pos):
-		return "top"
-	if Rect2(bottom_mid - Vector2(half, half), Vector2(hit, hit)).has_point(world_pos):
-		return "bottom"
-	return ""
-
-func _chunk_overlaps(pos: Vector2i, size: Vector2i, ignore: ChunkData) -> bool:
-	if map_data == null:
-		return false
-	var rect := Rect2i(pos, size)
-	for other in map_data.chunks:
-		if other == ignore:
-			continue
-		var other_rect := Rect2i(other.pos, other.size)
-		if rect.intersects(other_rect):
-			return true
-	return false
-
-func _ranges_overlap(a_min: int, a_max: int, b_min: int, b_max: int) -> bool:
-	return a_min < b_max and b_min < a_max
-
-func _tile_in_chunk(tile_pos: Vector2i, chunk: ChunkData) -> bool:
-	return tile_pos.x >= chunk.pos.x \
-		and tile_pos.y >= chunk.pos.y \
-		and tile_pos.x < chunk.pos.x + chunk.size.x \
-		and tile_pos.y < chunk.pos.y + chunk.size.y
-
-func _find_non_overlapping_position(start_pos: Vector2i, size: Vector2i) -> Vector2i:
-	if map_data == null:
-		return start_pos
-	if not _chunk_overlaps(start_pos, size, null):
-		return start_pos
-	var radius := 1
-	while radius < 32:
-		for dy in range(-radius, radius + 1):
-			for dx in range(-radius, radius + 1):
-				if abs(dx) != radius and abs(dy) != radius:
-					continue
-				var candidate := start_pos + Vector2i(dx, dy)
-				if not _chunk_overlaps(candidate, size, null):
-					return candidate
-		radius += 1
-	return start_pos
-
-func _update_chunk_ui() -> void:
-	var show_controls := chunk_edit_mode
-	if pen_button != null:
-		pen_button.toggle_mode = not show_controls
-		pen_button.button_pressed = (not show_controls and tool == Tool.PEN)
-		var pen_icon := pen_button as IconButton
-		if pen_icon != null:
-			pen_icon.icon_texture = ICON_CHUNK_ADD if show_controls else ICON_PEN
-	if rect_button != null:
-		rect_button.toggle_mode = not show_controls
-		rect_button.button_pressed = (not show_controls and tool == Tool.RECT)
-		var rect_icon := rect_button as IconButton
-		if rect_icon != null:
-			rect_icon.icon_texture = ICON_CHUNK_REMOVE if show_controls else ICON_RECT
-	var can_delete := map_data != null and map_data.chunks.size() > 1 and selected_chunk != null
-	if rect_button != null:
-		rect_button.disabled = show_controls and not can_delete
-	var icon_button := chunk_toggle as IconButton
-	if icon_button != null:
-		icon_button.icon_texture = ICON_BACK if show_controls else ICON_CHUNK
 
 var _is_panning := false
 var _pan_start_screen := Vector2.ZERO
@@ -1165,13 +843,13 @@ func _is_spawn_area_clear(tile_pos: Vector2i) -> bool:
 			var pos := tile_pos + Vector2i(x, y)
 			if _has_entry_at(map_data.layers.get("object", []), pos):
 				return false
-			if _has_entry_at(map_data.layers.get("deco", []), pos):
+			if tile_tool != null and tile_tool.has_tile_at("deco", pos):
 				return false
-			if _has_entry_at(map_data.layers.get("block", []), pos):
+			if tile_tool != null and tile_tool.has_tile_at("block", pos):
 				return false
-			if _has_entry_at(map_data.layers.get("terrain", []), pos):
+			if tile_tool != null and tile_tool.has_tile_at("terrain", pos):
 				return false
-			if _has_entry_at(map_data.layers.get("hazard", []), pos):
+			if tile_tool != null and tile_tool.has_tile_at("hazard", pos):
 				return false
 	return true
 
@@ -1197,123 +875,6 @@ func _has_entry_at(entries: Array, local_pos: Vector2i) -> bool:
 			return true
 	return false
 
-func _handle_chunk_edit_mouse_button(event: InputEventMouseButton) -> void:
-	if event.button_index != MOUSE_BUTTON_LEFT:
-		return
-	if event.pressed:
-		var world_pos := get_global_mouse_position()
-		var handle_chunk: ChunkData = null
-		var handle := ""
-		for candidate in map_data.chunks:
-			var found := _get_chunk_handle_at_pos(candidate, world_pos)
-			if found != "":
-				handle_chunk = candidate
-				handle = found
-				break
-		if handle_chunk != null:
-			selected_chunk = handle_chunk
-			resize_handle = handle
-			resizing_chunk = true
-			drag_start_tile = _get_mouse_tile()
-			drag_chunk_origin = handle_chunk.pos
-			drag_chunk_size = handle_chunk.size
-			_record_undo()
-			_update_chunk_ui()
-			return
-		var tile_pos := _get_mouse_tile()
-		var chunk := map_data.get_chunk_at_tile(tile_pos)
-		if chunk != null:
-			selected_chunk = chunk
-			dragging_chunk = true
-			drag_start_tile = tile_pos
-			drag_chunk_origin = chunk.pos
-			drag_chunk_size = chunk.size
-			_record_undo()
-			_update_chunk_ui()
-	else:
-		if resizing_chunk:
-			resizing_chunk = false
-			resize_handle = ""
-			_sync_start_chunk_from_spawn()
-			_clamp_spawn_after_chunk_change()
-			_refresh_renderer()
-		elif dragging_chunk:
-			dragging_chunk = false
-			_sync_start_chunk_from_spawn()
-			_clamp_spawn_after_chunk_change()
-			_refresh_renderer()
-
-func _drag_chunk() -> void:
-	var tile_pos := _get_mouse_tile()
-	var delta := tile_pos - drag_start_tile
-	if selected_chunk != null:
-		var new_pos := drag_chunk_origin + delta
-		if not _chunk_overlaps(new_pos, selected_chunk.size, selected_chunk):
-			selected_chunk.pos = new_pos
-
-func _resize_chunk() -> void:
-	if selected_chunk == null or map_data == null:
-		return
-	var tile_pos := _get_mouse_tile()
-	var min_size := MapData.MIN_CHUNK_SIZE
-	var left := drag_chunk_origin.x
-	var right := drag_chunk_origin.x + drag_chunk_size.x
-	var top := drag_chunk_origin.y
-	var bottom := drag_chunk_origin.y + drag_chunk_size.y
-	match resize_handle:
-		"left":
-			var new_left: int = int(min(right - min_size.x, tile_pos.x))
-			var limit_left := -1000000
-			for other in map_data.chunks:
-				if other == selected_chunk:
-					continue
-				if _ranges_overlap(top, bottom, other.pos.y, other.pos.y + other.size.y):
-					limit_left = max(limit_left, other.pos.x + other.size.x)
-			if limit_left > -1000000:
-				new_left = max(new_left, limit_left)
-			new_left = min(new_left, right - min_size.x)
-			selected_chunk.pos.x = new_left
-			selected_chunk.size.x = right - new_left
-		"right":
-			var new_right: int = int(max(left + min_size.x, tile_pos.x + 1))
-			var limit_right := 1000000
-			for other in map_data.chunks:
-				if other == selected_chunk:
-					continue
-				if _ranges_overlap(top, bottom, other.pos.y, other.pos.y + other.size.y):
-					limit_right = min(limit_right, other.pos.x)
-			if limit_right < 1000000:
-				new_right = min(new_right, limit_right)
-			new_right = max(new_right, left + min_size.x)
-			selected_chunk.pos.x = left
-			selected_chunk.size.x = new_right - left
-		"top":
-			var new_top: int = int(min(bottom - min_size.y, tile_pos.y))
-			var limit_top := -1000000
-			for other in map_data.chunks:
-				if other == selected_chunk:
-					continue
-				if _ranges_overlap(left, right, other.pos.x, other.pos.x + other.size.x):
-					limit_top = max(limit_top, other.pos.y + other.size.y)
-			if limit_top > -1000000:
-				new_top = max(new_top, limit_top)
-			new_top = min(new_top, bottom - min_size.y)
-			selected_chunk.pos.y = new_top
-			selected_chunk.size.y = bottom - new_top
-		"bottom":
-			var new_bottom: int = int(max(top + min_size.y, tile_pos.y + 1))
-			var limit_bottom := 1000000
-			for other in map_data.chunks:
-				if other == selected_chunk:
-					continue
-				if _ranges_overlap(left, right, other.pos.x, other.pos.x + other.size.x):
-					limit_bottom = min(limit_bottom, other.pos.y)
-			if limit_bottom < 1000000:
-				new_bottom = min(new_bottom, limit_bottom)
-			new_bottom = max(new_bottom, top + min_size.y)
-			selected_chunk.pos.y = top
-			selected_chunk.size.y = new_bottom - top
-
 func _clamp_spawn_after_chunk_change() -> void:
 	if map_data == null:
 		return
@@ -1328,17 +889,26 @@ func _clamp_spawn_after_chunk_change() -> void:
 	if clamped != map_data.spawn:
 		_set_spawn(clamped)
 
+func _on_cursor_toggled(pressed: bool) -> void:
+	if not pressed:
+		return
+	_set_active_tool(Tool.CURSOR)
+
 func _on_pen_toggled(pressed: bool) -> void:
-	if pressed:
-		tool = Tool.PEN
-	else:
-		tool = Tool.RECT
+	if not pressed or tile_tool == null:
+		return
+	_set_active_tool(Tool.PEN)
+	tile_tool.set_tool(Tool.PEN)
+	if chunk_tool != null:
+		chunk_tool.update_ui()
 
 func _on_rect_toggled(pressed: bool) -> void:
-	if pressed:
-		tool = Tool.RECT
-	else:
-		tool = Tool.PEN
+	if not pressed or tile_tool == null:
+		return
+	_set_active_tool(Tool.RECT)
+	tile_tool.set_tool(Tool.RECT)
+	if chunk_tool != null:
+		chunk_tool.update_ui()
 
 func _on_save_pressed() -> void:
 	_save_map()
@@ -1369,6 +939,9 @@ func _on_menu_save_quit() -> void:
 	_on_menu_quit()
 
 func _on_menu_quit() -> void:
+	Game.current_map_path = ""
+	Game.current_map_data = null
+	Game.current_map_id = ""
 	var root := get_tree().root
 	if root != null:
 		var fader: Node = root.get_node_or_null("SceneFader")
@@ -1398,14 +971,14 @@ func _on_menu_diff_up() -> void:
 func _adjust_difficulty(delta: int) -> void:
 	if map_data == null:
 		return
-	var diff := clampi(int(map_data.metadata.get("difficulty", 1)) + delta, 1, 8)
-	map_data.metadata["difficulty"] = diff
+	var diff := clampi(int(map_data.metadata.get("rating", 1)) + delta, 1, 8)
+	map_data.metadata["rating"] = diff
 	_update_difficulty_icon()
 
 func _update_difficulty_icon() -> void:
 	if editor_menu_diff_icon == null or map_data == null:
 		return
-	var diff := clampi(int(map_data.metadata.get("difficulty", 1)), 1, 8)
+	var diff := clampi(int(map_data.metadata.get("rating", 1)), 1, 8)
 	var path := "res://graphics/ui/16px/difficulty/%s.png" % str(diff)
 	if ResourceLoader.exists(path):
 		editor_menu_diff_icon.texture = load(path)
@@ -1457,17 +1030,26 @@ func _update_background_layout() -> void:
 func _load_background_list() -> Array[String]:
 	var out: Array[String] = []
 	var dir := DirAccess.open("res://graphics/backgrounds")
-	if dir == null:
-		return out
-	dir.list_dir_begin()
-	var name := dir.get_next()
-	while name != "":
-		if not dir.current_is_dir():
-			if name.to_lower().ends_with(".png"):
-				out.append(name)
-		name = dir.get_next()
-	dir.list_dir_end()
+	if dir != null:
+		dir.list_dir_begin()
+		var name := dir.get_next()
+		while name != "":
+			if not dir.current_is_dir():
+				if name.to_lower().ends_with(".png"):
+					out.append(name)
+			name = dir.get_next()
+		dir.list_dir_end()
+	if out.is_empty():
+		out = _load_background_fallback()
 	out.sort()
+	return out
+
+func _load_background_fallback() -> Array[String]:
+	var out: Array[String] = []
+	for name in BACKGROUND_CATALOG.BACKGROUND_FILES:
+		var path := "res://graphics/backgrounds/%s" % name
+		if ResourceLoader.exists(path):
+			out.append(name)
 	return out
 
 func _pick_random_bg() -> String:
@@ -1482,81 +1064,79 @@ func _pick_random_bg() -> String:
 func _on_new_chunk_pressed() -> void:
 	if not chunk_edit_mode:
 		return
-	var chunk := ChunkData.new()
-	chunk.id = _make_chunk_id()
-	var center := camera.get_screen_center_position()
-	var center_tile := Vector2i(floor(center.x / MapData.TILE_SIZE), floor(center.y / MapData.TILE_SIZE))
-	var desired_pos := center_tile - (MapData.MIN_CHUNK_SIZE / 2)
-	chunk.pos = _find_non_overlapping_position(desired_pos, MapData.MIN_CHUNK_SIZE)
-	chunk.size = MapData.MIN_CHUNK_SIZE
-	map_data.chunks.append(chunk)
-	selected_chunk = chunk
-	_refresh_renderer()
-	_update_chunk_ui()
+	if chunk_tool != null:
+		chunk_tool.add_new_chunk()
 
 func _on_chunk_edit_toggled(pressed: bool) -> void:
-	chunk_edit_mode = pressed
-	if not pressed:
-		dragging_chunk = false
-		resizing_chunk = false
-		resize_handle = ""
+	if chunk_tool != null:
+		chunk_tool.set_edit_mode(pressed)
+	else:
+		chunk_edit_mode = pressed
 	_update_chunk_ui()
 
 func _on_chunk_delete_pressed() -> void:
 	if not chunk_edit_mode:
 		return
-	if map_data == null or selected_chunk == null:
-		return
-	if map_data.chunks.size() <= 1:
-		return
-	var index := map_data.chunks.find(selected_chunk)
-	if index == -1:
-		return
-	_record_undo()
-	var spawn_in_removed := _tile_in_chunk(map_data.spawn, selected_chunk)
-	var removed_id := selected_chunk.id
-	map_data.chunks.remove_at(index)
-	selected_chunk = null
-	if spawn_in_removed and map_data.chunks.size() > 0:
-		_set_spawn(map_data.chunks[0].pos + Vector2i(3, 3))
-	if removed_id == map_data.start_chunk_id:
-		_sync_start_chunk_from_spawn()
-	if selected_chunk == null and not map_data.chunks.is_empty():
-		var pick_index: int = clampi(index - 1, 0, map_data.chunks.size() - 1)
-		selected_chunk = map_data.chunks[pick_index]
-	_refresh_renderer()
-	_update_chunk_ui()
+	if chunk_tool != null:
+		chunk_tool.delete_selected_chunk()
 
 func _on_tile_button_pressed(prefix: String, source_id: int, atlas_coords: Vector2i) -> void:
-	selected_source_id = source_id
-	selected_atlas = atlas_coords
-	selected_alt = 0
-	selected_scene_path = ""
-	selected_layer = prefix
+	if tile_tool == null:
+		return
+	tile_tool.select_tile(prefix, source_id, atlas_coords)
 
 
 func _on_scene_button_pressed(scene_path: String) -> void:
-	selected_scene_path = scene_path
-	selected_layer = "object"
-	selected_source_id = TileCatalog.INVALID_SOURCE
+	if tile_tool == null:
+		return
+	tile_tool.select_scene(scene_path)
 
 func _save_map() -> void:
 	Game.ensure_dirs()
 	if current_save_path == "":
 		current_save_path = _make_new_map_path()
-	MapIO.save_map(current_save_path, map_data, true)
+	else:
+		current_save_path = _ensure_kittymap_path(current_save_path)
+	_sync_map_data_tile_layers()
+	MapIO.save_map(current_save_path, map_data)
+
+func build_preview_map_data(size_px: Vector2i = Vector2i(320, 180)) -> MapData:
+	_sync_map_data_tile_layers()
+	return map_data.make_preview_map_data(size_px)
+
+func capture_preview_image(size: Vector2i, scale: Vector2 = Vector2.ONE) -> Image:
+	var capture := MapPreviewCapture.new()
+	capture.tile_set = tile_set
+	add_child(capture)
+	var image: Image = await capture.capture(map_data, size, scale)
+	capture.queue_free()
+	return image
 
 func _make_new_map_path() -> String:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	while true:
-		var name := "map_%s_%s.json" % [str(Time.get_unix_time_from_system()), str(rng.randi())]
+		var name := "map_%s_%s.kittymap" % [str(Time.get_unix_time_from_system()), str(rng.randi())]
 		var path := "%s/%s" % [Game.WIP_DIR, name]
 		if not FileAccess.file_exists(path):
 			return path
-	return "%s/map.json" % Game.WIP_DIR
+	return "%s/map.kittymap" % Game.WIP_DIR
+
+func _ensure_kittymap_path(path: String) -> String:
+	var trimmed := path.strip_edges()
+	if trimmed == "":
+		return trimmed
+	var lower := trimmed.to_lower()
+	if lower.ends_with(".kittymap"):
+		return trimmed
+	var sep = max(trimmed.rfind("/"), trimmed.rfind("\\"))
+	var dot = trimmed.rfind(".")
+	if dot > sep:
+		trimmed = trimmed.substr(0, dot)
+	return "%s.kittymap" % trimmed
 
 func _record_undo() -> void:
+	_sync_map_data_tile_layers()
 	var snapshot := map_data.to_compact_dict()
 	undo_stack.append(snapshot)
 	if undo_stack.size() > undo_limit:
@@ -1585,6 +1165,134 @@ func _vec2i_from_value(value) -> Vector2i:
 		if arr.size() >= 2:
 			return Vector2i(int(arr[0]), int(arr[1]))
 	return Vector2i.ZERO
+
+func _set_active_tool(new_tool: int) -> void:
+	if active_tool == new_tool:
+		return
+	active_tool = new_tool
+	if active_tool == Tool.CURSOR:
+		if preview_layer != null:
+			preview_layer.clear()
+	else:
+		_clear_cursor_selection()
+
+func _clear_cursor_selection() -> void:
+	cursor_rect = Rect2i()
+	cursor_rect_active = false
+	cursor_drag_offset = Vector2i.ZERO
+
+func _set_cursor_rect(rect: Rect2i, active: bool, drag_offset: Vector2i) -> void:
+	cursor_rect = rect
+	cursor_rect_active = active
+	cursor_drag_offset = drag_offset
+
+func _get_cursor_rect_pixels() -> Rect2:
+	if not cursor_rect_active:
+		return Rect2()
+	var rect_pos := cursor_rect.position + cursor_drag_offset
+	var rect_size := cursor_rect.size
+	var pos_px := Vector2(rect_pos) * MapData.TILE_SIZE
+	var size_px := Vector2(rect_size) * MapData.TILE_SIZE
+	return Rect2(pos_px, size_px)
+
+func _open_object_inspector_at(tile_pos: Vector2i) -> void:
+	if map_data == null:
+		return
+	var info := _find_object_entry_at(tile_pos)
+	if info.is_empty():
+		return
+	var entry: Dictionary = info.get("entry", {})
+	var scene_path := str(entry.get("scene", ""))
+	if not _is_inspectable_scene(scene_path):
+		return
+	_ensure_object_inspector()
+	if inspector_text == null:
+		return
+	inspector_entry_index = int(info.get("index", -1))
+	inspector_entry_pos = tile_pos
+	var data = entry.get("data", {})
+	if typeof(data) != TYPE_DICTIONARY:
+		data = {}
+	inspector_text.text = str(data.get("text", ""))
+	_open_inspector_panel()
+
+func _find_object_entry_at(tile_pos: Vector2i) -> Dictionary:
+	var entries: Array = map_data.layers.get("object", [])
+	for i in range(entries.size() - 1, -1, -1):
+		var entry = entries[i]
+		if typeof(entry) != TYPE_DICTIONARY:
+			continue
+		var pos := _vec2i_from_value(entry.get("pos", null))
+		if pos == tile_pos:
+			return {"index": i, "entry": entry}
+	return {}
+
+func _is_inspectable_scene(scene_path: String) -> bool:
+	return scene_path.ends_with("info_sign.tscn")
+
+func _ensure_object_inspector() -> void:
+	if inspector_panel == null:
+		return
+	if inspector_panel.visible:
+		inspector_panel.visible = false
+	if inspector_close != null and not inspector_close.pressed.is_connected(_close_inspector_panel):
+		inspector_close.pressed.connect(_close_inspector_panel)
+	if inspector_options == null:
+		return
+	if inspector_text != null:
+		return
+	for child in inspector_options.get_children():
+		child.queue_free()
+	var label := Label.new()
+	label.text = "Text"
+	inspector_text = LineEdit.new()
+	inspector_text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	if not inspector_text.text_changed.is_connected(_on_inspector_text_changed):
+		inspector_text.text_changed.connect(_on_inspector_text_changed)
+	inspector_options.add_child(label)
+	inspector_options.add_child(inspector_text)
+
+func _open_inspector_panel() -> void:
+	if inspector_panel == null:
+		return
+	inspector_panel.visible = true
+	if inspector_header != null:
+		inspector_header.text = "Inspector"
+	var view := get_viewport_rect().size
+	var pos := get_viewport().get_mouse_position() + Vector2(12, 12)
+	var size := inspector_panel.size
+	pos.x = clamp(pos.x, 8.0, max(8.0, view.x - size.x - 8.0))
+	pos.y = clamp(pos.y, 8.0, max(8.0, view.y - size.y - 8.0))
+	inspector_panel.position = pos
+
+func _close_inspector_panel() -> void:
+	if inspector_panel != null:
+		inspector_panel.visible = false
+
+func _on_inspector_text_changed(new_text: String) -> void:
+	_apply_inspector_text(new_text)
+
+func _apply_inspector_text(new_text: String) -> void:
+	if map_data == null:
+		return
+	if inspector_entry_index < 0:
+		return
+	var entries: Array = map_data.layers.get("object", [])
+	if inspector_entry_index >= entries.size():
+		return
+	var entry = entries[inspector_entry_index]
+	if typeof(entry) != TYPE_DICTIONARY:
+		return
+	_record_undo()
+	var data = entry.get("data", {})
+	if typeof(data) != TYPE_DICTIONARY:
+		data = {}
+	data["text"] = new_text
+	entry["data"] = data
+	entries[inspector_entry_index] = entry
+	map_data.layers["object"] = entries
+	if renderer != null:
+		renderer.update_scene(inspector_entry_pos, entry)
 
 func _get_editor_camera() -> Camera2D:
 	return camera

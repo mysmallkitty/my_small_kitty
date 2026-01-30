@@ -3,53 +3,10 @@ extends Node2D
 @export var mode := "play" # "play" or "editor"
 @export var map_item_scene: PackedScene = preload("res://ui/panels/map_row.tscn")
 @export var row_height := 26.0
-@export var scroll_step := 12.0
-@export var scroll_anim_step := 1.0
+@export var scroll_step := 10.0
+@export var scroll_anim_step := 5.0
 @export var page_size := 20
 @export var auto_load_threshold := 24.0
-
-@onready var list_viewport: Control = get_node_or_null("UI/Hud/ListViewport") as Control
-@onready var list_root: Control = get_node_or_null("UI/Hud/ListViewport/ListRoot") as Control
-@onready var back_button: BaseButton = get_node_or_null("UI/Hud/Back") as BaseButton
-@onready var create_button: BaseButton = get_node_or_null("UI/Hud/Back2") as BaseButton
-@onready var dim: ColorRect = get_node_or_null("UI/Dim") as ColorRect
-@onready var profile_panel: Control = get_node_or_null("UI/Hud/ProfilePanel") as Control
-@onready var auth_panel: Control = get_node_or_null("UI/AuthPanel") as Control
-@onready var profile_detail: Control = get_node_or_null("UI/UserProfileDetail") as Control
-
-var detail_panel: Control
-var detail_title: Label
-var detail_creator: Label
-var detail_play_count: Label
-var detail_death_count: Label
-var detail_clear_count: Label
-var detail_upload_date: Label
-var detail_difficulty_icon: TextureRect
-var play_button: BaseButton
-var leaderboard_button: BaseButton
-var stats_button: BaseButton
-
-var edit_button: BaseButton
-var delete_button: BaseButton
-var title_edit: LineEdit
-var file_label: Label
-var verified_label: Label
-
-var stats_panel: Control
-var stats_play_label: Label
-var stats_death_label: Label
-var stats_best_label: Label
-var stats_close_button: BaseButton
-
-var leaderboard_panel: Control
-var leaderboard_rows: Control
-var leaderboard_close_button: BaseButton
-var leaderboard_empty_label: Label
-
-var create_panel: Control
-var create_title: LineEdit
-var create_confirm: BaseButton
-var create_close: BaseButton
 
 var _items: Array[MapRow] = []
 var _entries: Array[Dictionary] = []
@@ -60,13 +17,12 @@ var _scroll_min := 0.0
 var _page := 1
 var _loading := false
 var _has_more := true
-var _ignore_title_signal := false
 var _preview_request_id := 0
 
 func _ready() -> void:
 	Game.ensure_dirs()
-	_bind_ui()
-	_connect_buttons()
+	_connect_root_buttons()
+	_connect_panels()
 	_setup_profile_click()
 	_refresh_list()
 	set_process(true)
@@ -78,107 +34,56 @@ func _process(_delta: float) -> void:
 	_scroll_offset = _step_towards(_scroll_offset, _scroll_target, scroll_anim_step)
 	_update_item_targets()
 
-func _bind_ui() -> void:
-	if detail_panel == null:
-		detail_panel = get_node_or_null("UI/DetailPanel") as Control
-	if detail_panel == null:
-		detail_panel = get_node_or_null("UI/Hud/DetailPanel") as Control
-	if mode == "play":
-		_bind_play_detail_panel()
-		_bind_stats_panel()
-		_bind_leaderboard_panel()
-	else:
-		_bind_editor_detail_panel()
-		_bind_create_panel()
-
-func _bind_play_detail_panel() -> void:
-	if detail_panel == null:
-		return
-	detail_title = detail_panel.get_node_or_null("Panel/Title") as Label
-	detail_creator = detail_panel.get_node_or_null("Panel/Creator") as Label
-	detail_play_count = detail_panel.get_node_or_null("Panel/PlayCount") as Label
-	detail_death_count = detail_panel.get_node_or_null("Panel/DeathCount") as Label
-	detail_clear_count = detail_panel.get_node_or_null("Panel/ClearCount") as Label
-	detail_upload_date = detail_panel.get_node_or_null("Panel/UploadDate") as Label
-	detail_difficulty_icon = detail_panel.get_node_or_null("Panel/DifficultyIcon") as TextureRect
-	play_button = detail_panel.get_node_or_null("Panel/PlayButton") as BaseButton
-	leaderboard_button = detail_panel.get_node_or_null("Panel/LeaderBoardButton") as BaseButton
-	stats_button = detail_panel.get_node_or_null("Panel/StatsButton") as BaseButton
-
-func _bind_editor_detail_panel() -> void:
-	if detail_panel == null:
-		return
-	title_edit = detail_panel.get_node_or_null("Panel/Title") as LineEdit
-	file_label = detail_panel.get_node_or_null("Panel/FileName") as Label
-	verified_label = detail_panel.get_node_or_null("Panel/Verified") as Label
-	detail_difficulty_icon = detail_panel.get_node_or_null("Panel/DifficultyIcon") as TextureRect
-	play_button = detail_panel.get_node_or_null("Panel/PlayButton") as BaseButton
-	edit_button = detail_panel.get_node_or_null("Panel/EditButton") as BaseButton
-	delete_button = detail_panel.get_node_or_null("Panel/DeleteMap") as BaseButton
-
-func _bind_stats_panel() -> void:
-	stats_panel = get_node_or_null("UI/MapStats") as Control
-	if stats_panel == null:
-		stats_panel = get_node_or_null("UI/Hud/MapStats") as Control
-	if stats_panel == null:
-		return
-	stats_play_label = stats_panel.get_node_or_null("Panel/PlayCount") as Label
-	stats_death_label = stats_panel.get_node_or_null("Panel/DeathCount") as Label
-	stats_best_label = stats_panel.get_node_or_null("Panel/BestTime") as Label
-	stats_close_button = stats_panel.get_node_or_null("Panel/CloseButton") as BaseButton
-
-func _bind_create_panel() -> void:
-	create_panel = get_node_or_null("UI/CreateNewMap") as Control
-	if create_panel == null:
-		create_panel = get_node_or_null("UI/Hud/CreateNewMap") as Control
-	if create_panel == null:
-		return
-	create_title = create_panel.get_node_or_null("LineEdit") as LineEdit
-	create_confirm = create_panel.get_node_or_null("Confirm") as BaseButton
-	create_close = create_panel.get_node_or_null("CloseButton") as BaseButton
-
-func _bind_leaderboard_panel() -> void:
-	leaderboard_panel = get_node_or_null("UI/LeaderBoard") as Control
-	if leaderboard_panel == null:
-		leaderboard_panel = get_node_or_null("UI/Hud/LeaderBoard") as Control
-	if leaderboard_panel == null:
-		return
-	leaderboard_rows = leaderboard_panel.get_node_or_null("Panel/RecordContainer") as Control
-	leaderboard_close_button = leaderboard_panel.get_node_or_null("Panel/CloseButton") as BaseButton
-	leaderboard_empty_label = leaderboard_panel.get_node_or_null("Panel/no_records_yet") as Label
-
-func _connect_buttons() -> void:
+func _connect_root_buttons() -> void:
+	var back_button := get_node_or_null("UI/Hud/Back") as BaseButton
 	if back_button != null and not back_button.pressed.is_connected(_on_back_pressed):
 		back_button.pressed.connect(_on_back_pressed)
+	var create_button := get_node_or_null("UI/Hud/Back2") as BaseButton
 	if create_button != null and not create_button.pressed.is_connected(_on_create_pressed):
 		create_button.pressed.connect(_on_create_pressed)
-	if play_button != null and not play_button.pressed.is_connected(_on_play_pressed):
-		play_button.pressed.connect(_on_play_pressed)
-	if edit_button != null and not edit_button.pressed.is_connected(_on_edit_pressed):
-		edit_button.pressed.connect(_on_edit_pressed)
-	if delete_button != null and not delete_button.pressed.is_connected(_on_delete_pressed):
-		delete_button.pressed.connect(_on_delete_pressed)
-	if leaderboard_button != null and not leaderboard_button.pressed.is_connected(_on_leaderboard_pressed):
-		leaderboard_button.pressed.connect(_on_leaderboard_pressed)
-	if stats_button != null and not stats_button.pressed.is_connected(_on_stats_pressed):
-		stats_button.pressed.connect(_on_stats_pressed)
-	if stats_close_button != null and not stats_close_button.pressed.is_connected(_on_stats_close_pressed):
-		stats_close_button.pressed.connect(_on_stats_close_pressed)
-	if leaderboard_close_button != null and not leaderboard_close_button.pressed.is_connected(_on_leaderboard_close_pressed):
-		leaderboard_close_button.pressed.connect(_on_leaderboard_close_pressed)
-	if title_edit != null:
-		if not title_edit.text_submitted.is_connected(_on_title_submitted):
-			title_edit.text_submitted.connect(_on_title_submitted)
-		if not title_edit.focus_exited.is_connected(_on_title_focus_exited):
-			title_edit.focus_exited.connect(_on_title_focus_exited)
-	if create_confirm != null and not create_confirm.pressed.is_connected(_on_create_confirm):
-		create_confirm.pressed.connect(_on_create_confirm)
-	if create_close != null and not create_close.pressed.is_connected(_on_create_close):
-		create_close.pressed.connect(_on_create_close)
-	if create_title != null and not create_title.text_submitted.is_connected(_on_create_title_submitted):
-		create_title.text_submitted.connect(_on_create_title_submitted)
+
+func _connect_panels() -> void:
+	if mode == "play":
+		var detail_panel := _get_play_detail_panel()
+		if detail_panel != null:
+			if not detail_panel.play_pressed.is_connected(_on_play_pressed):
+				detail_panel.play_pressed.connect(_on_play_pressed)
+			if not detail_panel.leaderboard_pressed.is_connected(_on_leaderboard_pressed):
+				detail_panel.leaderboard_pressed.connect(_on_leaderboard_pressed)
+			if not detail_panel.stats_pressed.is_connected(_on_stats_pressed):
+				detail_panel.stats_pressed.connect(_on_stats_pressed)
+		var stats_panel := _get_stats_panel()
+		if stats_panel != null and not stats_panel.close_pressed.is_connected(_on_stats_close_pressed):
+			stats_panel.close_pressed.connect(_on_stats_close_pressed)
+		var leaderboard_panel := _get_leaderboard_panel()
+		if leaderboard_panel != null and not leaderboard_panel.close_pressed.is_connected(_on_leaderboard_close_pressed):
+			leaderboard_panel.close_pressed.connect(_on_leaderboard_close_pressed)
+	else:
+		var editor_panel := _get_editor_detail_panel()
+		if editor_panel != null:
+			if not editor_panel.play_pressed.is_connected(_on_play_pressed):
+				editor_panel.play_pressed.connect(_on_play_pressed)
+			if not editor_panel.edit_pressed.is_connected(_on_edit_pressed):
+				editor_panel.edit_pressed.connect(_on_edit_pressed)
+			if not editor_panel.delete_pressed.is_connected(_on_delete_pressed):
+				editor_panel.delete_pressed.connect(_on_delete_pressed)
+			if not editor_panel.upload_pressed.is_connected(_on_upload_pressed):
+				editor_panel.upload_pressed.connect(_on_upload_pressed)
+			if not editor_panel.title_changed.is_connected(_on_title_changed):
+				editor_panel.title_changed.connect(_on_title_changed)
+		var create_panel := _get_create_panel()
+		if create_panel != null:
+			if create_panel.has_signal("create_requested"):
+				var callable = Callable(self, "_on_create_requested")
+				if not create_panel.is_connected("create_requested", callable):
+					create_panel.connect("create_requested", callable, CONNECT_DEFERRED)
+			if create_panel.has_signal("close_pressed"):
+				var close_callable = Callable(self, "_on_create_close")
+				if not create_panel.is_connected("close_pressed", close_callable):
+					create_panel.connect("close_pressed", close_callable, CONNECT_DEFERRED)
 
 func _setup_profile_click() -> void:
+	var profile_panel := get_node_or_null("UI/Hud/ProfilePanel") as Control
 	if profile_panel == null:
 		return
 	profile_panel.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -195,6 +100,7 @@ func _on_profile_input(event: InputEvent) -> void:
 				_open_auth_panel()
 
 func _open_auth_panel() -> void:
+	var auth_panel := get_node_or_null("UI/AuthPanel") as Control
 	if auth_panel == null:
 		return
 	if auth_panel.has_method("open_login"):
@@ -205,6 +111,7 @@ func _open_auth_panel() -> void:
 		auth_panel.visible = true
 
 func _open_profile_detail() -> void:
+	var profile_detail := get_node_or_null("UI/UserProfileDetail") as Control
 	if profile_detail == null:
 		return
 	if profile_detail.has_method("open_with_me"):
@@ -220,7 +127,7 @@ func _refresh_list() -> void:
 	_scroll_offset = 0.0
 	_scroll_target = 0.0
 	_selected_index = -1
-	for child in list_root.get_children():
+	for child in _get_list_root().get_children():
 		child.queue_free()
 	if mode == "editor":
 		_load_local_maps()
@@ -240,31 +147,19 @@ func _load_local_maps() -> void:
 				break
 			if dir.current_is_dir():
 				continue
-			if not file.to_lower().ends_with(".json"):
+			var lower := file.to_lower()
+			if not lower.ends_with(".kittymap"):
 				continue
 			var path := "%s/%s" % [Game.WIP_DIR, file]
 			var map := MapIO.load_map(path)
-			var meta := map.metadata if map != null else {}
-			var title := str(meta.get("title", ""))
-			if title.strip_edges() == "":
-				title = "Untitled"
+			if map == null:
+				continue
 			entries.append({
-				"title": title,
-				"creator": "",
-				"difficulty": int(meta.get("difficulty", 1)),
-				"plays": 0,
-				"deaths": 0,
-				"clears": 0,
-				"upload_date": "",
-				"best_time": "",
-				"tries": 0,
-				"is_verified": bool(meta.get("is_verified", false)),
-				"map_id": int(meta.get("map_id", -1)),
 				"path": path,
-				"bg": str(meta.get("bg", "")),
+				"metadata": map.metadata,
 			})
 		dir.list_dir_end()
-	entries.sort_custom(func(a, b): return str(a.get("title", "")) < str(b.get("title", "")))
+	entries.sort_custom(func(a, b): return _get_entry_title(a) < _get_entry_title(b))
 	_entries = entries
 	_rebuild_items()
 
@@ -289,29 +184,12 @@ func _request_next_page() -> void:
 	for item in items:
 		if typeof(item) != TYPE_DICTIONARY:
 			continue
-		var entry: Dictionary = item as Dictionary
-		_entries.append({
-			"id": str(entry.get("id", "")),
-			"title": str(entry.get("title", "")),
-			"creator": str(entry.get("creator", "")),
-			"difficulty": int(entry.get("level", 1)),
-			"level": int(entry.get("level", 1)),
-			"plays": int(entry.get("download_count", 0)),
-			"deaths": 0,
-			"clears": 0,
-			"upload_date": "",
-			"best_time": "",
-			"tries": int(entry.get("download_count", 0)),
-			"is_verified": bool(entry.get("is_ranked", false)),
-			"thumbnail_url": str(entry.get("thumbnail_url", "")),
-			"loved_count": int(entry.get("loved_count", 0)),
-			"download_count": int(entry.get("download_count", 0)),
-		})
+		_entries.append(item as Dictionary)
 	_page += 1
 	_rebuild_items()
 
 func _rebuild_items() -> void:
-	for child in list_root.get_children():
+	for child in _get_list_root().get_children():
 		child.queue_free()
 	_items.clear()
 	for entry in _entries:
@@ -321,17 +199,22 @@ func _rebuild_items() -> void:
 		item.set_data(entry)
 		item.set_base_position(Vector2(0, _items.size() * row_height))
 		item.pressed.connect(_on_item_pressed)
-		list_root.add_child(item)
+		_get_list_root().add_child(item)
 		_items.append(item)
 	_update_scroll_limits()
-	if _selected_index < 0 and _items.size() > 0:
+	var preferred := _get_preferred_selection_index()
+	if preferred >= 0:
+		_selected_index = preferred
+	elif _selected_index < 0 and _items.size() > 0:
 		_selected_index = 0
-		_items[0].set_selected(true)
+	if _selected_index >= 0 and _selected_index < _items.size():
+		_items[_selected_index].set_selected(true)
 		_center_on_selected()
 	_update_detail_panel()
 	_request_preview_for_selected()
 
 func _update_scroll_limits() -> void:
+	var list_viewport := _get_list_viewport()
 	if list_viewport == null:
 		return
 	var max_offset = max(0.0, (_items.size() - 1) * row_height)
@@ -339,6 +222,27 @@ func _update_scroll_limits() -> void:
 	_scroll_offset = clampf(_scroll_offset, _scroll_min, 0.0)
 	_scroll_target = clampf(_scroll_target, _scroll_min, 0.0)
 	_update_item_targets()
+
+func _get_preferred_selection_index() -> int:
+	if _items.is_empty():
+		return -1
+	if mode == "play":
+		var target_id := Game.last_play_map_id
+		if target_id == "":
+			target_id = Game.current_map_id
+		if target_id != "":
+			for i in range(_items.size()):
+				if str(_items[i].data.get("id", "")) == target_id:
+					return i
+	else:
+		var target_path := Game.last_editor_map_path
+		if target_path == "":
+			target_path = Game.current_map_path
+		if target_path != "":
+			for i in range(_items.size()):
+				if str(_items[i].data.get("path", "")) == target_path:
+					return i
+	return -1
 
 func _update_item_targets() -> void:
 	var base_y := _get_center_base_y()
@@ -361,44 +265,33 @@ func _on_item_pressed(item: MapRow) -> void:
 	_request_preview_for_selected()
 
 func _update_detail_panel() -> void:
-	if detail_panel != null:
-		detail_panel.visible = _selected_index >= 0 and _selected_index < _items.size()
-	if _selected_index < 0 or _selected_index >= _items.size():
+	var has_selection := _selected_index >= 0 and _selected_index < _items.size()
+	if mode == "play":
+		var panel := _get_play_detail_panel()
+		if panel != null:
+			panel.visible = has_selection
+			if has_selection:
+				panel.set_entry(_items[_selected_index].data)
+		return
+	var editor_panel := _get_editor_detail_panel()
+	if editor_panel == null:
+		return
+	editor_panel.visible = has_selection
+	if not has_selection:
 		return
 	var entry: Dictionary = _items[_selected_index].data
-	if mode == "play":
-		if detail_title != null:
-			detail_title.text = str(entry.get("title", ""))
-		if detail_creator != null:
-			detail_creator.text = str(entry.get("creator", ""))
-		if detail_play_count != null:
-			detail_play_count.text = str(entry.get("plays", 0))
-		if detail_death_count != null:
-			detail_death_count.text = str(entry.get("deaths", 0))
-		if detail_clear_count != null:
-			detail_clear_count.text = str(entry.get("clears", 0))
-		if detail_upload_date != null:
-			var date_text := str(entry.get("upload_date", ""))
-			detail_upload_date.text = date_text if date_text != "" else "--"
-	else:
-		if title_edit != null:
-			_ignore_title_signal = true
-			title_edit.text = str(entry.get("title", ""))
-			_ignore_title_signal = false
-		if file_label != null:
-			var path := str(entry.get("path", ""))
-			file_label.text = path.get_file()
-		if verified_label != null:
-			verified_label.text = "verified" if bool(entry.get("is_verified", false)) else "unverified"
-	_update_difficulty_icon(int(entry.get("difficulty", 1)))
-
-func _update_difficulty_icon(difficulty: int) -> void:
-	if detail_difficulty_icon == null:
-		return
-	var diff := clampi(difficulty, 1, 8)
-	var path := "res://graphics/ui/16px/difficulty/%s.png" % str(diff)
-	if ResourceLoader.exists(path):
-		detail_difficulty_icon.texture = load(path)
+	var path := str(entry.get("path", ""))
+	var file_name := path.get_file()
+	var is_verified := false
+	var can_upload := false
+	if path != "":
+		var map := MapIO.load_map(path)
+		if map != null:
+			var stored_hash := str(map.metadata.get("verified_hash", ""))
+			var computed_hash := map.compute_verified_hash()
+			is_verified = stored_hash != "" and stored_hash == computed_hash
+			can_upload = is_verified and _is_logged_in()
+	editor_panel.set_state(entry, file_name, is_verified, can_upload)
 
 func _request_preview_for_selected() -> void:
 	if _selected_index < 0 or _selected_index >= _items.size():
@@ -420,11 +313,13 @@ func _request_preview_for_selected() -> void:
 		if request_id != _preview_request_id:
 			return
 		if detail.size() > 0:
-			_merge_detail_entry(entry, detail)
+			_apply_detail_to_entry(entry, detail)
 			_entries[_selected_index] = entry
 			_items[_selected_index].set_data(entry)
 			_update_detail_panel()
-		map_data = await _download_map_data(map_id)
+		map_data = await _download_preview_data(map_id, entry)
+		if map_data == null:
+			map_data = await _download_map_data(map_id, entry)
 		if request_id != _preview_request_id:
 			return
 	_set_background_preview(map_data)
@@ -433,6 +328,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_WHEEL_UP or mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			var list_viewport := _get_list_viewport()
 			if list_viewport != null and list_viewport.get_global_rect().has_point(mb.position):
 				var dir := 1.0 if mb.button_index == MOUSE_BUTTON_WHEEL_UP else -1.0
 				_scroll_target = clampf(_scroll_target + (scroll_step * dir), _scroll_min, 0.0)
@@ -449,22 +345,30 @@ func _on_play_pressed() -> void:
 			Game.current_map_path = path
 			Game.current_map_data = null
 			Game.current_map_id = ""
+			Game.last_editor_map_path = path
+			Game.return_scene = "res://roots/map_select_editor.tscn"
+			_change_scene("res://roots/map_play.tscn")
+			return
 	else:
 		var map_id := str(entry.get("id", ""))
 		if map_id == "":
 			return
+		var entry_data: Dictionary = _items[_selected_index].data
+		entry_data = await _ensure_detail_for_entry(entry_data)
 		var cached := Game.get_cached_map(map_id)
 		if cached != null:
 			Game.current_map_data = cached
 		else:
-			var map_data := await _download_map_data(map_id)
+			var map_data := await _download_map_data(map_id, entry_data)
 			if map_data == null:
 				return
 			Game.cache_map(map_id, map_data)
 			Game.current_map_data = map_data
 		Game.current_map_id = map_id
 		Game.current_map_path = ""
-	_change_scene("res://roots/map_play.tscn")
+		Game.last_play_map_id = map_id
+		Game.return_scene = ""
+		_change_scene("res://roots/map_play.tscn")
 
 func _on_edit_pressed() -> void:
 	if _selected_index < 0 or _selected_index >= _items.size():
@@ -475,6 +379,7 @@ func _on_edit_pressed() -> void:
 		return
 	Game.current_map_path = path
 	Game.current_map_data = null
+	Game.last_editor_map_path = path
 	_change_scene("res://roots/map_editor.tscn")
 
 func _on_delete_pressed() -> void:
@@ -489,55 +394,65 @@ func _on_delete_pressed() -> void:
 	_refresh_list()
 
 func _on_back_pressed() -> void:
+	if mode == "play":
+		Game.last_play_map_id = ""
+		Game.current_map_id = ""
+		Game.current_map_data = null
+		Game.current_map_path = ""
+	elif mode == "editor":
+		Game.last_editor_map_path = ""
+		Game.current_map_path = ""
+		Game.current_map_data = null
+		Game.current_map_id = ""
 	_change_scene("res://roots/main_menu.tscn")
 
 func _on_create_pressed() -> void:
+	var create_panel := _get_create_panel()
 	if create_panel == null:
 		return
-	if create_title != null:
-		create_title.text = ""
-		create_title.grab_focus()
+	if create_panel.has_method("reset_focus"):
+		create_panel.reset_focus()
 	_show_popup(create_panel)
 
 func _on_create_close() -> void:
-	_hide_popup(create_panel)
+	var create_panel := _get_create_panel()
+	_show_hide_popup(create_panel, false)
 
-func _on_create_confirm() -> void:
-	var title := ""
-	if create_title != null:
-		title = create_title.text.strip_edges()
+func _on_create_requested(title: String) -> void:
 	_create_new_map(title)
 
-func _on_create_title_submitted(new_text: String) -> void:
-	_create_new_map(new_text.strip_edges())
-
 func _on_leaderboard_pressed() -> void:
+	var leaderboard_panel := _get_leaderboard_panel()
 	if leaderboard_panel == null:
 		return
 	if leaderboard_panel.visible:
-		_hide_popup(leaderboard_panel)
+		_show_hide_popup(leaderboard_panel, false)
 		return
-	_hide_popup(stats_panel)
+	_show_hide_popup(_get_stats_panel(), false)
 	_show_popup(leaderboard_panel)
 	_load_leaderboard()
 
 func _on_stats_pressed() -> void:
+	var stats_panel := _get_stats_panel()
 	if stats_panel == null:
 		return
 	if stats_panel.visible:
-		_hide_popup(stats_panel)
+		_show_hide_popup(stats_panel, false)
 		return
-	_hide_popup(leaderboard_panel)
+	_show_hide_popup(_get_leaderboard_panel(), false)
 	_update_stats_panel()
 	_show_popup(stats_panel)
 
 func _on_stats_close_pressed() -> void:
-	_hide_popup(stats_panel)
+	_show_hide_popup(_get_stats_panel(), false)
 
 func _on_leaderboard_close_pressed() -> void:
-	_hide_popup(leaderboard_panel)
+	_show_hide_popup(_get_leaderboard_panel(), false)
 
 func _update_stats_panel() -> void:
+	var stats_panel := _get_stats_panel()
+	if stats_panel == null:
+		return
 	var best := "--:--"
 	var tries := 0
 	var deaths := 0
@@ -546,37 +461,21 @@ func _update_stats_panel() -> void:
 		var time := str(entry.get("best_time", ""))
 		if time != "":
 			best = time
-		tries = int(entry.get("tries", 0))
-		deaths = int(entry.get("deaths", 0))
-	if stats_play_label != null:
-		stats_play_label.text = str(tries)
-	if stats_death_label != null:
-		stats_death_label.text = str(deaths)
-	if stats_best_label != null:
-		stats_best_label.text = best
+		tries = int(entry.get("total_attempts", 0))
+		deaths = int(entry.get("total_deaths", 0))
+	stats_panel.set_stats(tries, deaths, best)
 
-func _on_title_submitted(new_text: String) -> void:
-	if _ignore_title_signal:
-		return
+func _on_title_changed(new_text: String) -> void:
 	_apply_title_change(new_text)
-
-func _on_title_focus_exited() -> void:
-	if _ignore_title_signal:
-		return
-	if title_edit == null:
-		return
-	_apply_title_change(title_edit.text)
 
 func _apply_title_change(new_text: String) -> void:
 	if _selected_index < 0 or _selected_index >= _items.size():
 		return
 	var entry: Dictionary = _items[_selected_index].data
 	var title := new_text.strip_edges()
-	if title == "":
-		title = "Untitled"
-	entry["title"] = title
-	_entries[_selected_index]["title"] = title
-	_items[_selected_index].set_data(entry)
+	var meta = entry.get("metadata", null)
+	if typeof(meta) == TYPE_DICTIONARY:
+		meta["title"] = title
 	var path := str(entry.get("path", ""))
 	if path == "":
 		return
@@ -584,13 +483,13 @@ func _apply_title_change(new_text: String) -> void:
 	if map == null:
 		return
 	map.metadata["title"] = title
-	MapIO.save_map(path, map, true)
+	MapIO.save_map(path, map)
+	_items[_selected_index].set_data(entry)
 
 func _load_leaderboard() -> void:
-	if leaderboard_rows == null:
+	var leaderboard_panel := _get_leaderboard_panel()
+	if leaderboard_panel == null:
 		return
-	for child in leaderboard_rows.get_children():
-		child.queue_free()
 	var rows: Array = []
 	if mode == "play" and _selected_index >= 0 and _selected_index < _items.size():
 		var entry: Dictionary = _items[_selected_index].data
@@ -603,48 +502,24 @@ func _load_leaderboard() -> void:
 					var items: Array = data.get("leaderboard", [])
 					if typeof(items) == TYPE_ARRAY:
 						rows = items
-	if rows.is_empty():
-		if leaderboard_empty_label != null:
-			leaderboard_empty_label.visible = true
-		return
-	if leaderboard_empty_label != null:
-		leaderboard_empty_label.visible = false
-	var y := 0.0
-	for row in rows:
-		if typeof(row) != TYPE_DICTIONARY:
-			continue
-		var entry_dict: Dictionary = row as Dictionary
-		var row_node := load("res://ui/panels/record_row.tscn").instantiate() as Control
-		if row_node == null:
-			continue
-		row_node.position = Vector2(0, y)
-		var name_label := row_node.get_node_or_null("Panel/username") as Label
-		if name_label != null:
-			name_label.text = str(entry_dict.get("username", entry_dict.get("name", "")))
-		var time_label := row_node.get_node_or_null("Panel/HBoxContainer/ClearTime") as Label
-		if time_label != null:
-			time_label.text = str(entry_dict.get("clear_time", entry_dict.get("time", "")))
-		var death_label := row_node.get_node_or_null("Panel/HBoxContainer/DeathCount") as Label
-		if death_label != null:
-			death_label.text = str(entry_dict.get("deaths", entry_dict.get("death", 0)))
-		leaderboard_rows.add_child(row_node)
-		y += row_node.size.y
+	leaderboard_panel.set_rows(rows)
 
 func _show_popup(panel: Control) -> void:
-	if panel == null:
-		return
-	if panel.has_method("show_popup"):
-		panel.show_popup()
-	else:
-		panel.visible = true
+	_show_hide_popup(panel, true)
 
-func _hide_popup(panel: Control) -> void:
+func _show_hide_popup(panel: Control, visible: bool) -> void:
 	if panel == null:
 		return
-	if panel.has_method("hide_popup"):
-		panel.hide_popup()
+	if visible:
+		if panel.has_method("show_popup"):
+			panel.show_popup()
+		else:
+			panel.visible = true
 	else:
-		panel.visible = false
+		if panel.has_method("hide_popup"):
+			panel.hide_popup()
+		else:
+			panel.visible = false
 
 func _change_scene(path: String) -> void:
 	var root := get_tree().root
@@ -668,28 +543,30 @@ func _create_new_map(title: String) -> void:
 	map.spawn = chunk.pos + Vector2i(3, 3)
 	map.start_chunk_id = chunk.id
 	var trimmed := title.strip_edges()
-	map.metadata["title"] = trimmed if trimmed != "" else "Untitled"
+	map.metadata["title"] = trimmed
 	map.metadata["map_id"] = -1
-	map.metadata["difficulty"] = 1
+	map.metadata["rating"] = 1
 	map.metadata["bg"] = _pick_random_bg()
-	map.metadata["is_verified"] = false
+	map.metadata["verified_hash"] = ""
 	var path := _make_new_map_path()
-	MapIO.save_map(path, map, true)
-	_hide_popup(create_panel)
+	MapIO.save_map(path, map)
+	_show_hide_popup(_get_create_panel(), false)
 	Game.current_map_path = path
 	Game.current_map_data = null
 	Game.current_map_id = ""
-	_change_scene("res://roots/map_editor.tscn")
+	Game.last_editor_map_path = path
+	Game.return_scene = "res://roots/map_select_editor.tscn"
+	_change_scene("res://roots/map_select_editor.tscn")
 
 func _make_new_map_path() -> String:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	while true:
-		var name := "map_%s_%s.json" % [str(Time.get_unix_time_from_system()), str(rng.randi())]
+		var name := "map_%s_%s.kittymap" % [str(Time.get_unix_time_from_system()), str(rng.randi())]
 		var path := "%s/%s" % [Game.WIP_DIR, name]
 		if not FileAccess.file_exists(path):
 			return path
-	return "%s/map.json" % Game.WIP_DIR
+	return "%s/map.kittymap" % Game.WIP_DIR
 
 func _make_chunk_id() -> String:
 	var rng := RandomNumberGenerator.new()
@@ -717,6 +594,43 @@ func _pick_random_bg() -> String:
 	rng.randomize()
 	return choices[rng.randi_range(0, choices.size() - 1)]
 
+func _on_upload_pressed() -> void:
+	if mode != "editor":
+		return
+	if _selected_index < 0 or _selected_index >= _items.size():
+		return
+	var entry: Dictionary = _items[_selected_index].data
+	var path_str := str(entry.get("path", ""))
+	if path_str == "":
+		return
+	if not _is_logged_in():
+		_open_auth_panel()
+		return
+	var map := MapIO.load_map(path_str)
+	if map == null:
+		Alert.push("map load failed", true)
+		return
+	var stored_hash := str(map.metadata.get("verified_hash", ""))
+	var computed_hash := map.compute_verified_hash()
+	if stored_hash == "" or stored_hash != computed_hash:
+		Alert.push("map not verified", true)
+		return
+	var preview_map := map.make_preview_map_data(Vector2i(320, 180))
+	var map_bytes := MapIO.map_to_bytes(map)
+	var preview_bytes := MapIO.map_to_bytes(preview_map)
+	var map_id := int(map.metadata.get("map_id", -1))
+	var result: Dictionary = await MapService.upload_map(map, map_bytes, preview_bytes, map_id)
+	if not result.get("ok", false):
+		Alert.push(ApiClient._error_message(result), true)
+		return
+	if typeof(result.get("data", null)) == TYPE_DICTIONARY:
+		var data: Dictionary = result.get("data", {})
+		var new_id := int(data.get("id", map_id))
+		if new_id > 0:
+			map.metadata["map_id"] = new_id
+			MapIO.save_map(path_str, map)
+	Alert.push("upload complete", false)
+
 func _fetch_map_detail(map_id: String) -> Dictionary:
 	var result: Dictionary = await MapService.fetch_detail(map_id)
 	if not result.get("ok", false):
@@ -726,42 +640,116 @@ func _fetch_map_detail(map_id: String) -> Dictionary:
 		return data
 	return {}
 
-func _download_map_data(map_id: String) -> MapData:
+func _download_map_data(map_id: String, entry: Dictionary) -> MapData:
+	var updated_at := str(entry.get("updated_at", ""))
+	var map_hash := str(entry.get("hash", ""))
+	var cached := _load_cached_map(map_id, map_hash, false)
+	if cached != null:
+		return cached
 	var result: Dictionary = await MapService.download_map(map_id)
 	if not result.get("ok", false):
 		return null
-	var raw_text := str(result.get("raw_text", ""))
-	if raw_text.strip_edges() == "":
-		var bytes: PackedByteArray = result.get("bytes", PackedByteArray())
-		raw_text = bytes.get_string_from_utf8()
-	var parsed = JSON.parse_string(raw_text)
-	if typeof(parsed) != TYPE_DICTIONARY:
+	var bytes: PackedByteArray = result.get("bytes", PackedByteArray())
+	if bytes.is_empty():
 		return null
-	return MapIO.map_from_dict(parsed)
+	var downloaded_at := str(Time.get_unix_time_from_system())
+	var path := _cache_file_path(map_id, downloaded_at, false)
+	if not _write_cache_file(path, bytes):
+		return null
+	var meta := _load_cache_meta(map_id)
+	meta["updated_at"] = updated_at
+	meta["hash"] = map_hash
+	meta["map_path"] = path
+	meta["map_downloaded_at"] = downloaded_at
+	_save_cache_meta(map_id, meta)
+	return MapIO.load_map(path)
 
-func _merge_detail_entry(entry: Dictionary, detail: Dictionary) -> void:
-	entry["title"] = str(detail.get("title", entry.get("title", "")))
-	entry["creator"] = str(detail.get("creator", entry.get("creator", "")))
-	var level := int(detail.get("level", entry.get("level", entry.get("difficulty", 1))))
-	entry["difficulty"] = level
-	entry["level"] = level
-	entry["is_verified"] = bool(detail.get("is_ranked", entry.get("is_verified", false)))
-	entry["plays"] = int(detail.get("download_count", entry.get("plays", 0)))
-	entry["tries"] = int(detail.get("total_attempts", entry.get("tries", 0)))
-	entry["deaths"] = int(detail.get("total_deaths", entry.get("deaths", 0)))
-	entry["clears"] = int(detail.get("total_clears", entry.get("clears", 0)))
-	entry["upload_date"] = _format_date(detail.get("created_at", entry.get("upload_date", "")))
-	entry["thumbnail_url"] = str(detail.get("thumbnail_url", entry.get("thumbnail_url", "")))
-	entry["map_url"] = str(detail.get("map_url", entry.get("map_url", "")))
+func _download_preview_data(map_id: String, entry: Dictionary) -> MapData:
+	var updated_at := str(entry.get("updated_at", ""))
+	var map_hash := str(entry.get("hash", ""))
+	var cached := _load_cached_map(map_id, map_hash, true)
+	if cached != null:
+		return cached
+	var result: Dictionary = await MapService.download_preview(map_id)
+	if not result.get("ok", false):
+		return null
+	var bytes: PackedByteArray = result.get("bytes", PackedByteArray())
+	if bytes.is_empty():
+		return null
+	var downloaded_at := str(Time.get_unix_time_from_system())
+	var path := _cache_file_path(map_id, downloaded_at, true)
+	if not _write_cache_file(path, bytes):
+		return null
+	var meta := _load_cache_meta(map_id)
+	meta["updated_at"] = updated_at
+	meta["hash"] = map_hash
+	meta["preview_path"] = path
+	meta["preview_downloaded_at"] = downloaded_at
+	_save_cache_meta(map_id, meta)
+	return MapIO.load_map(path)
 
-func _format_date(value: Variant) -> String:
-	var text := str(value)
-	if text == "":
-		return ""
-	var parts := text.split("T")
-	if parts.size() > 0:
-		return parts[0]
-	return text
+func _cache_meta_path(map_id: String) -> String:
+	return "%s/%s.json" % [Game.CACHE_META_DIR, map_id]
+
+func _load_cache_meta(map_id: String) -> Dictionary:
+	var path := _cache_meta_path(map_id)
+	if not FileAccess.file_exists(path):
+		return {}
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null:
+		return {}
+	var text := file.get_as_text()
+	file.close()
+	var parsed = JSON.parse_string(text)
+	if typeof(parsed) == TYPE_DICTIONARY:
+		return parsed
+	return {}
+
+func _save_cache_meta(map_id: String, data: Dictionary) -> void:
+	var path := _cache_meta_path(map_id)
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return
+	file.store_string(JSON.stringify(data, ""))
+	file.close()
+
+func _cache_file_path(map_id: String, downloaded_at: String, is_preview: bool) -> String:
+	var base := Game.PREVIEW_CACHE_DIR if is_preview else Game.MAP_CACHE_DIR
+	var suffix := "_preview" if is_preview else ""
+	return "%s/%s_%s%s.kittymap" % [base, map_id, downloaded_at, suffix]
+
+func _write_cache_file(path: String, bytes: PackedByteArray) -> bool:
+	var file := FileAccess.open(path, FileAccess.WRITE)
+	if file == null:
+		return false
+	file.store_buffer(bytes)
+	file.close()
+	return true
+
+func _load_cached_map(map_id: String, map_hash: String, is_preview: bool) -> MapData:
+	var meta := _load_cache_meta(map_id)
+	var meta_hash := str(meta.get("hash", ""))
+	if meta_hash != map_hash:
+		return null
+	var key := "preview_path" if is_preview else "map_path"
+	var path := str(meta.get(key, ""))
+	if path == "" or not FileAccess.file_exists(path):
+		return null
+	return null
+
+func _ensure_detail_for_entry(entry: Dictionary) -> Dictionary:
+	if str(entry.get("updated_at", "")) == "":
+		var map_id := str(entry.get("id", ""))
+		if map_id != "":
+			var detail := await _fetch_map_detail(map_id)
+			if detail.size() > 0:
+				_apply_detail_to_entry(entry, detail)
+	return entry
+
+func _apply_detail_to_entry(entry: Dictionary, detail: Dictionary) -> void:
+	for key in ["title", "creator", "rating", "total_attempts", "total_deaths", "total_clears", "created_at", "updated_at", "thumbnail_url", "map_url", "hash", "is_ranked", "loved_count"]:
+		if detail.has(key):
+			entry[key] = detail.get(key)
 
 func _set_background_preview(map_data: MapData) -> void:
 	var bg := get_node_or_null("Background")
@@ -774,6 +762,7 @@ func _step_towards(value: float, target: float, step: float) -> float:
 	return value + step * sign(target - value)
 
 func _get_center_base_y() -> float:
+	var list_viewport := _get_list_viewport()
 	if list_viewport == null:
 		return 0.0
 	return (list_viewport.size.y * 0.5) - (row_height * 0.5)
@@ -788,3 +777,36 @@ func _get_me_data() -> Dictionary:
 			return me.get("data", {})
 		return me
 	return {}
+
+func _get_list_root() -> Control:
+	return get_node("UI/Hud/ListViewport/ListRoot") as Control
+
+func _get_list_viewport() -> Control:
+	return get_node("UI/Hud/ListViewport") as Control
+
+func _get_play_detail_panel() -> MapSelectDetailPlay:
+	return get_node_or_null("UI/DetailPanel") as MapSelectDetailPlay
+
+func _get_editor_detail_panel() -> MapSelectDetailEditor:
+	return get_node_or_null("UI/Hud/DetailPanel") as MapSelectDetailEditor
+
+func _get_stats_panel() -> MapSelectStatsPanel:
+	return get_node_or_null("UI/MapStats") as MapSelectStatsPanel
+
+func _get_leaderboard_panel() -> MapSelectLeaderboardPanel:
+	return get_node_or_null("UI/LeaderBoard") as MapSelectLeaderboardPanel
+
+func _get_create_panel() -> Control:
+	var panel := get_node_or_null("UI/CreateNewMap") as Control
+	if panel == null:
+		panel = get_node_or_null("UI/Hud/CreateNewMap") as Control
+	if panel == null:
+		panel = find_child("CreateNewMap", true, false) as Control
+	return panel
+
+func _get_entry_title(entry: Dictionary) -> String:
+	var meta = entry.get("metadata", null)
+	if typeof(meta) == TYPE_DICTIONARY:
+		var title := str(meta.get("title", ""))
+		return title
+	return str(entry.get("title", ""))

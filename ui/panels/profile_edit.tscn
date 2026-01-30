@@ -1,0 +1,32 @@
+[gd_scene load_steps=6 format=3 uid="uid://c68csufdvmyo7"]
+
+[ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_xt5hh"]
+[ext_resource type="Script" uid="uid://dn25igyfb8oej" path="res://scripts/ui/popup_panel.gd" id="2_mr3oe"]
+[ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="3_uy1p2"]
+[ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="4_vhg1n"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="5_xt5hh"]
+
+[node name="ProfileEdit" type="Control"]
+clip_contents = true
+layout_mode = 3
+anchor_left = 0.2
+anchor_right = 0.2
+offset_left = -64.0
+offset_right = 114.0
+offset_bottom = 113.0
+theme = ExtResource("1_xt5hh")
+script = ExtResource("2_mr3oe")
+
+[node name="Panel2" type="Panel" parent="."]
+layout_mode = 0
+offset_right = 178.0
+offset_bottom = 113.0
+
+[node name="CloseButton" parent="Panel2" instance=ExtResource("3_uy1p2")]
+layout_mode = 0
+offset_left = 158.0
+offset_top = 4.0
+offset_right = 174.5
+offset_bottom = 20.0
+icon_texture = ExtResource("4_vhg1n")
+click_sound = ExtResource("5_xt5hh")

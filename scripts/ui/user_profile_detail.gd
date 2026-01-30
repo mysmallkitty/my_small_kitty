@@ -5,13 +5,12 @@ var user_id = -1
 
 @onready var username_label = $Username
 @onready var rank_label = $Rank
-@onready var 	play_label = $PlayCount
-@onready var 	clear_label = $ClearedCount
-@onready var 	death_label = $DeathCount
-@onready var 	created_label = $JoinDate
-@onready var 	level_label = $LevelCreated
-@onready var 	close_button = $CloseButton
-@onready var 	country_label = $CountryFlag
+@onready var play_label = $PlayCount
+@onready var clear_label = $ClearedCount
+@onready var death_label = $DeathCount
+@onready var created_label = $JoinDate
+@onready var close_button = $CloseButton
+@onready var country_label = $CountryFlag
 
 func _ready() -> void:
 	super()
@@ -46,6 +45,7 @@ func _apply_user(user: Dictionary) -> void:
 		created_label.text = _format_date(str(user.get("created_at", "")))
 		country_label.texture = get_flag_png(user.get("country","unknown"))
 
+
 func _format_date(value: String) -> String:
 	if value == "":
 		return "--"
@@ -54,12 +54,14 @@ func _format_date(value: String) -> String:
 		return parts[0]
 	return value
 
-func get_flag_png(code: String) -> Texture:
-	var path := "res://graphics/ui/flags".path_join(code + ".png")
-	if FileAccess.file_exists(path):
-		var t = load(path)
-		return t
-	return load("res://graphics/ui/flags/unkown.png")
+func get_flag_png(code) -> Texture:
+	var code_str := str(code).strip_edges().to_lower()
+	if code_str == "" or code_str == "unknown":
+		return load("res://graphics/ui/flags/unknown.png")
+	var path := "res://graphics/ui/flags".path_join(code_str + ".png")
+	if ResourceLoader.exists(path):
+		return load(path)
+	return load("res://graphics/ui/flags/unknown.png")
 
 func _get_me_data() -> Dictionary:
 	var me = ApiClient.me

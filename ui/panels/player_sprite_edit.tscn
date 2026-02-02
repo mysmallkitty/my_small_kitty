@@ -1,14 +1,15 @@
-[gd_scene load_steps=8 format=3 uid="uid://c68csufdvmyo7"]
+[gd_scene load_steps=9 format=3 uid="uid://bumfgi1gvps6m"]
 
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="1_xt5hh"]
-[ext_resource type="Script" uid="uid://cff1fdgasboqt" path="res://scripts/ui/profile_edit.gd" id="2_mr3oe"]
+[ext_resource type="Script" uid="uid://br8mylmqvphag" path="res://scripts/ui/player_sprite_edit.gd" id="2_script"]
 [ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="3_uy1p2"]
 [ext_resource type="Texture2D" uid="uid://cbjiccv4nde5x" path="res://graphics/ui/8px/simple/x.png" id="4_vhg1n"]
 [ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="5_xt5hh"]
 [ext_resource type="Script" uid="uid://bniu4c20kkri" path="res://scripts/ui/pixel_canvas.gd" id="6_lws2t"]
-[ext_resource type="Texture2D" uid="uid://d3u2wvjog1sw1" path="res://graphics/ui/8px/simple/upload.png" id="7_uy1p2"]
+[ext_resource type="Texture2D" uid="uid://d3u2wvjog1sw1" path="res://graphics/ui/8px/simple/upload.png" id="7_j30nl"]
+[ext_resource type="Texture2D" uid="uid://hwwgsbveqcxg" path="res://graphics/ui/8px/simple/reset.png" id="8_j30nl"]
 
-[node name="ProfileEdit" type="Control"]
+[node name="PlayerSpriteEdit" type="Control"]
 clip_contents = true
 layout_mode = 3
 anchor_left = 0.2
@@ -17,7 +18,7 @@ offset_left = -64.0
 offset_right = 170.0
 offset_bottom = 150.0
 theme = ExtResource("1_xt5hh")
-script = ExtResource("2_mr3oe")
+script = ExtResource("2_script")
 
 [node name="Panel2" type="Panel" parent="."]
 layout_mode = 0
@@ -40,7 +41,7 @@ offset_top = 6.0
 offset_right = 120.0
 offset_bottom = 16.0
 theme = ExtResource("1_xt5hh")
-text = "Profile Avatar"
+text = "Player Sprite"
 
 [node name="Canvas" type="Control" parent="Panel2"]
 anchors_preset = 0
@@ -49,6 +50,9 @@ offset_top = 20.0
 offset_right = 72.0
 offset_bottom = 84.0
 script = ExtResource("6_lws2t")
+size_x = 9
+size_y = 8
+code_len = 72
 
 [node name="PaletteRoot" type="Control" parent="Panel2"]
 anchors_preset = 0
@@ -59,9 +63,18 @@ offset_bottom = 84.0
 
 [node name="UploadButton" parent="Panel2" instance=ExtResource("3_uy1p2")]
 layout_mode = 0
-offset_left = 32.0
-offset_top = 100.0
-offset_right = 48.0
-offset_bottom = 116.0
-icon_texture = ExtResource("7_uy1p2")
+offset_left = 8.0
+offset_top = 115.0
+offset_right = 24.0
+offset_bottom = 131.0
+icon_texture = ExtResource("7_j30nl")
+click_sound = ExtResource("5_xt5hh")
+
+[node name="UploadButton2" parent="Panel2" instance=ExtResource("3_uy1p2")]
+layout_mode = 0
+offset_left = 29.0
+offset_top = 115.0
+offset_right = 45.0
+offset_bottom = 131.0
+icon_texture = ExtResource("8_j30nl")
 click_sound = ExtResource("5_xt5hh")

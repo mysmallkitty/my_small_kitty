@@ -20,14 +20,24 @@ var bgm_volume := 1.0
 var sfx_volume := 1.0
 const PROFILE_SIZE := 16
 const PROFILE_CODE_LEN := 256
-const PROFILE_ALPHABET := "0123456789abcdefghijklmnopqrstuv"
+const PROFILE_ALPHABET := "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_"
+const PROFILE_ALPHABET_32 := "lLpXrkbMmKVIGFECDBz6y4juD0mktnQP"
+const PLAYER_SIZE_X := 9
+const PLAYER_SIZE_Y := 8
+const PLAYER_CODE_LEN := 72
+const PLAYER_CODE_TOTAL_LEN := 73
+const PLAYER_ALPHABET_64 = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_"
+var PLAYER_ALPHABET_32 = PLAYER_ALPHABET_64.substr(0, 32)
 var _profile_texture_cache: Dictionary = {}
 var _profile_palette: Array = []
+var _player_texture_cache: Dictionary = {}
+var _player_palette: Array = []
 
 func _ready() -> void:
 	_apply_audio()
 	Engine.max_fps = 60
-	_profile_palette = Palatte.new().colors
+	_profile_palette = Palatte.new().colors_64
+	_player_palette = _build_player_palette()
 
 func ensure_dirs() -> void:
 	DirAccess.make_dir_recursive_absolute(WIP_DIR)
@@ -114,15 +124,127 @@ func get_profile_texture(code: String) -> Texture2D:
 	_profile_texture_cache[code] = tex
 	return tex
 
-func profile_code_from_indices(indices: PackedInt32Array) -> String:
+func get_player_texture(code: String) -> Texture2D:
+	if code == "":
+		return load("res://graphics/kitty.png")
+	var decoded := decode_player_sprite(code)
+	if decoded.is_empty():
+		return load("res://graphics/kitty.png")
+	var cache_key := str(decoded.get("prefix", "0")) + ":" + str(decoded.get("data", ""))
+	if _player_texture_cache.has(cache_key):
+		return _player_texture_cache[cache_key]
+	var data: String = decoded.get("data", "")
+	if data.length() != PLAYER_CODE_LEN:
+		return load("res://graphics/kitty.png")
+	var img := Image.create(PLAYER_SIZE_X, PLAYER_SIZE_Y, false, Image.FORMAT_RGBA8)
+	var idx := 0
+	for y in range(PLAYER_SIZE_Y):
+		for x in range(PLAYER_SIZE_X):
+			var ch := data.substr(idx, 1)
+			var color_index := _player_index_from_char(ch)
+			if color_index < 0 or color_index >= _player_palette.size():
+				color_index = 0
+			var color: Color = _player_palette[color_index]
+			img.set_pixel(x, y, color)
+			idx += 1
+	var tex := ImageTexture.create_from_image(img)
+	_player_texture_cache[cache_key] = tex
+	return tex
+
+func get_player_palette() -> Array:
+	return _player_palette
+
+func encode_player_sprite(indices: PackedInt32Array) -> String:
+	print("debugpoint1")
+	print(indices.size())
+	if indices.size() != PLAYER_CODE_LEN:
+		return ""
+	var out := "1"
+	var alphabet = PLAYER_ALPHABET_64
+	for i in range(indices.size()):
+		var idx := int(indices[i])
+		if idx < 0 or idx >= alphabet.length():
+			idx = 0
+		out += alphabet[idx]
+	return out
+
+func decode_player_sprite(code: String) -> Dictionary:
+	if code.length() == PLAYER_CODE_LEN:
+		return {"prefix": "0", "data": code}
+	if code.length() != PLAYER_CODE_TOTAL_LEN:
+		return {}
+	var prefix := code.substr(0, 1)
+	var data := code.substr(1, PLAYER_CODE_LEN)
+	if prefix != "0" and prefix != "1":
+		return {}
+	return {"prefix": prefix, "data": data}
+
+func player_indices_from_code(code: String) -> PackedInt32Array:
+	var decoded := decode_player_sprite(code)
+	var data: String = decoded.get("data", "")
+	var out := PackedInt32Array()
+	out.resize(PLAYER_CODE_LEN)
+	for i in range(PLAYER_CODE_LEN):
+		if i >= data.length():
+			out[i] = 0
+		else:
+			out[i] = _player_index_from_char(data.substr(i, 1))
+	return out
+
+func player_indices_from_kitty() -> PackedInt32Array:
+	var tex := load("res://graphics/kitty.png")
+	if tex == null or not (tex is Texture2D):
+		return PackedInt32Array()
+	var img := (tex as Texture2D).get_image()
+	if img == null:
+		return PackedInt32Array()
+	var out := PackedInt32Array()
+	out.resize(PLAYER_CODE_LEN)
+	var idx := 0
+	var w = min(PLAYER_SIZE_X, img.get_width())
+	var h = min(PLAYER_SIZE_Y, img.get_height())
+	for y in range(h):
+		for x in range(w):
+			var color := img.get_pixel(x, y)
+			var palette_index := _player_palette_index_from_color(color)
+			out[idx] = palette_index
+			idx += 1
+	for i in range(idx, PLAYER_CODE_LEN):
+		out[i] = 0
+	return out
+
+func _player_palette_index_from_color(color: Color) -> int:
+	if color.a <= 0.0:
+		return 0
+	for i in range(_player_palette.size()):
+		if _player_palette[i].is_equal_approx(color):
+			return i
+	return 0
+
+func _player_index_from_char(ch: String) -> int:
+	var idx := PLAYER_ALPHABET_64.find(ch)
+	if idx < 0:
+		return 0
+	return idx
+
+func _build_player_palette() -> Array:
+	var out: Array = []
+	out.append(Color(0, 0, 0, 0))
+	var base = Palatte.new().colors_64
+	for c in base:
+		out.append(c)
+	return out
+
+func profile_code_from_indices(indices: PackedInt32Array, use_64) -> String:
+	var alphabets = PROFILE_ALPHABET if use_64 else PROFILE_ALPHABET_32
 	if indices.size() != PROFILE_CODE_LEN:
 		return ""
 	var out := ""
 	for i in range(indices.size()):
 		var idx := int(indices[i])
-		if idx < 0 or idx >= PROFILE_ALPHABET.length():
+		if idx < 0 or idx >= alphabets.length():
 			idx = 0
-		out += PROFILE_ALPHABET[idx]
+		out += alphabets[idx]
 	return out
 
 func profile_indices_from_code(code: String) -> PackedInt32Array:

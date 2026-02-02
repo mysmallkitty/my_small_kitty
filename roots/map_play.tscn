@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cch35x3210bth"]
+[gd_scene load_steps=9 format=3 uid="uid://cch35x3210bth"]
 
 [ext_resource type="Script" uid="uid://dojna2fa0e63x" path="res://scripts/map/map_world.gd" id="1_world"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="2_iw7op"]
@@ -7,6 +7,7 @@
 [ext_resource type="Script" uid="uid://brhd4il8y0v1l" path="res://scripts/map/map_preview.gd" id="5_preview"]
 [ext_resource type="Texture2D" uid="uid://b4v5ol2j3hr8o" path="res://graphics/ui/8px/death.png" id="6_0ryqv"]
 [ext_resource type="Texture2D" uid="uid://c0kfoeksewc0g" path="res://graphics/backgrounds/mountain.png" id="6_bgtex"]
+[ext_resource type="FontFile" uid="uid://753w5iciopwn" path="res://graphics/Galmuri7.ttf" id="8_e72yv"]
 
 [node name="MapPlay" type="Node2D"]
 script = ExtResource("1_world")
@@ -85,4 +86,6 @@ offset_top = 169.0
 offset_right = 312.0
 offset_bottom = 176.0
 theme = ExtResource("2_iw7op")
+theme_override_fonts/font = ExtResource("8_e72yv")
+theme_override_font_sizes/font_size = 8
 placeholder_text = "type chat"

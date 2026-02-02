@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://on77u71y1efl"]
+[gd_scene load_steps=16 format=3 uid="uid://on77u71y1efl"]
 
 [ext_resource type="Texture2D" uid="uid://c0kfoeksewc0g" path="res://graphics/backgrounds/mountain.png" id="1_3v6hg"]
 [ext_resource type="Script" uid="uid://b8yybj7rf263y" path="res://scripts/map/map_background.gd" id="1_jqn88"]
@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" uid="uid://dl7caoqabrnib" path="res://ui/panels/auth_panel.tscn" id="12_auth"]
 [ext_resource type="PackedScene" uid="uid://bpfpfirn2b13r" path="res://ui/panels/user_profile_detail.tscn" id="13_profile"]
 [ext_resource type="PackedScene" uid="uid://c68csufdvmyo7" path="res://ui/panels/profile_edit.tscn" id="14_profile_edit"]
+[ext_resource type="PackedScene" uid="uid://d0qj8b6jv0t3p" path="res://ui/panels/player_sprite_edit.tscn" id="15_player_edit"]
 
 [node name="MapSelectPlay" type="Node2D"]
 script = ExtResource("1_select")
@@ -114,6 +115,16 @@ dim_path = NodePath("../Dim")
 
 [node name="ProfileEdit" parent="UI" instance=ExtResource("14_profile_edit")]
 visible = false
-offset_left = 8.0
-offset_top = 20.0
+offset_left = -20.0
+offset_top = 12.0
+offset_right = 214.0
+offset_bottom = 162.0
+dim_path = NodePath("../Dim")
+
+[node name="PlayerSpriteEdit" parent="UI" instance=ExtResource("15_player_edit")]
+visible = false
+offset_left = -20.0
+offset_top = 12.0
+offset_right = 214.0
+offset_bottom = 162.0
 dim_path = NodePath("../Dim")

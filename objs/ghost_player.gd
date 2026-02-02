@@ -32,6 +32,11 @@ func _set_alive(alive: bool) -> void:
 		color.a = 0.6 if alive else 0.25
 		sprite.modulate = color
 
+func set_sprite_texture(tex: Texture2D) -> void:
+	if sprite == null or tex == null:
+		return
+	sprite.texture = tex
+
 func _play_death_fx() -> void:
 	if death_particles == null:
 		return

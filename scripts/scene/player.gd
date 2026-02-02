@@ -296,3 +296,9 @@ func _play_hyper_sfx() -> void:
 func _play_dash_sfx() -> void:
 	if _dash_player != null:
 		_dash_player.play()
+
+func set_sprite_texture(tex: Texture2D) -> void:
+	var sprite := get_node_or_null("Kitty") as Sprite2D
+	if sprite == null or tex == null:
+		return
+	sprite.texture = tex

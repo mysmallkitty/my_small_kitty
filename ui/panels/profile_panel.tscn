@@ -1,10 +1,12 @@
-[gd_scene load_steps=6 format=3 uid="uid://cfcvro2mtr04v"]
+[gd_scene load_steps=8 format=3 uid="uid://cfcvro2mtr04v"]
 
 [ext_resource type="Texture2D" uid="uid://bvdpx5uxa5phv" path="res://graphics/ui/profile_panel.png" id="1_hngwd"]
 [ext_resource type="Script" uid="uid://bsea4m3gv10ly" path="res://scripts/ui/profile_panel.gd" id="1_script"]
 [ext_resource type="Theme" uid="uid://d3qrjbdprxnyr" path="res://ui/theme/theme.tres" id="2_pq7qc"]
 [ext_resource type="Texture2D" uid="uid://b2odneysof1e2" path="res://graphics/ui/8px/ranks/1.png" id="2_pwqw1"]
 [ext_resource type="Texture2D" uid="uid://cdb1r6yfycofa" path="res://graphics/ui/16px/user_guest.png" id="3_pq7qc"]
+[ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="4_btn"]
+[ext_resource type="Texture2D" uid="uid://x7r2dhv5n2kg6" path="res://graphics/ui/8px/edit.png" id="5_edit"]
 
 [node name="ProfilePanel" type="Control"]
 layout_mode = 3
@@ -57,8 +59,16 @@ texture = ExtResource("2_pwqw1")
 [node name="Username" type="Label" parent="."]
 layout_mode = 0
 offset_left = 25.0
-offset_top = 9.0
+offset_top = 8.0
 offset_right = 99.0
-offset_bottom = 16.0
+offset_bottom = 17.0
 theme = ExtResource("2_pq7qc")
 text = "guest"
+
+[node name="PlayerSpriteButton" parent="." instance=ExtResource("4_btn")]
+layout_mode = 0
+offset_left = 106.0
+offset_top = 8.0
+offset_right = 122.0
+offset_bottom = 24.0
+icon_texture = ExtResource("5_edit")

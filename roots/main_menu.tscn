@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://bxjannrn6h6fp"]
+[gd_scene load_steps=15 format=3 uid="uid://bxjannrn6h6fp"]
 
 [ext_resource type="Script" uid="uid://cbg2bw437a1jc" path="res://scripts/ui/main_menu.gd" id="1_main"]
 [ext_resource type="Texture2D" uid="uid://c0kfoeksewc0g" path="res://graphics/backgrounds/mountain.png" id="2_6q716"]
@@ -10,6 +10,10 @@
 [ext_resource type="PackedScene" uid="uid://dl7caoqabrnib" path="res://ui/panels/auth_panel.tscn" id="6_mc14h"]
 [ext_resource type="PackedScene" uid="uid://bpfpfirn2b13r" path="res://ui/panels/user_profile_detail.tscn" id="7_profile"]
 [ext_resource type="PackedScene" uid="uid://c68csufdvmyo7" path="res://ui/panels/profile_edit.tscn" id="8_profile_edit"]
+[ext_resource type="PackedScene" uid="uid://bumfgi1gvps6m" path="res://ui/panels/player_sprite_edit.tscn" id="9_player_edit"]
+[ext_resource type="PackedScene" uid="uid://doqsgsvd3lpa2" path="res://ui/button_small.tscn" id="11_g04ek"]
+[ext_resource type="Texture2D" uid="uid://r283sjscesrm" path="res://graphics/ui/8px/crown.png" id="12_g04ek"]
+[ext_resource type="AudioStream" uid="uid://c6yn55me6x205" path="res://audio/click.wav" id="13_hoggf"]
 
 [node name="MainMenu" type="Node2D"]
 script = ExtResource("1_main")
@@ -97,6 +101,15 @@ offset_bottom = 49.0
 theme = ExtResource("5_theme")
 text = "quit"
 
+[node name="GlobalLeaderBoard" parent="UI/Hud/Buttons" instance=ExtResource("11_g04ek")]
+layout_mode = 0
+offset_left = 162.0
+offset_top = 46.0
+offset_right = 178.0
+offset_bottom = 62.0
+icon_texture = ExtResource("12_g04ek")
+click_sound = ExtResource("13_hoggf")
+
 [node name="ProfilePanel" parent="UI" instance=ExtResource("5_6q716")]
 
 [node name="Dim" type="ColorRect" parent="UI"]
@@ -122,6 +135,14 @@ offset_top = 38.0
 dim_path = NodePath("../Dim")
 
 [node name="ProfileEdit" parent="UI" instance=ExtResource("8_profile_edit")]
+visible = false
+offset_left = -20.0
+offset_top = 12.0
+offset_right = 214.0
+offset_bottom = 162.0
+dim_path = NodePath("../Dim")
+
+[node name="PlayerSpriteEdit" parent="UI" instance=ExtResource("9_player_edit")]
 visible = false
 offset_left = -20.0
 offset_top = 12.0

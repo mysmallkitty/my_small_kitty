@@ -32,18 +32,18 @@ texture = ExtResource("2_ic2gl")
 [node name="username" type="Label" parent="Panel"]
 layout_mode = 0
 offset_left = 19.0
-offset_top = 1.0
-offset_right = 59.0
-offset_bottom = 8.0
+offset_top = 2.0
+offset_right = 60.0
+offset_bottom = 11.0
 text = "username"
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Panel"]
 clip_contents = true
 layout_mode = 0
 offset_left = 19.0
-offset_top = 8.0
+offset_top = 9.0
 offset_right = 110.0
-offset_bottom = 17.0
+offset_bottom = 18.0
 
 [node name="ClearTime" type="Label" parent="Panel/HBoxContainer"]
 layout_mode = 2

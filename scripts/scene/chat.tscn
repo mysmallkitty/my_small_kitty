@@ -1,7 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://1877q1fej8v1"]
+[gd_scene load_steps=3 format=3 uid="uid://1877q1fej8v1"]
 
 [ext_resource type="Script" uid="uid://cck1koh80ervm" path="res://scripts/scene/chat.gd" id="1_mtmcl"]
+[ext_resource type="FontFile" uid="uid://753w5iciopwn" path="res://graphics/Galmuri7.ttf" id="1_v7p34"]
 
 [node name="Chat" type="Label"]
+theme_override_fonts/font = ExtResource("1_v7p34")
+theme_override_font_sizes/font_size = 8
 horizontal_alignment = 1
 script = ExtResource("1_mtmcl")

@@ -34,7 +34,6 @@ func refresh_from_api() -> void:
 	var me := _get_me_data()
 	_apply_user(me)
 
-
 func _connect_buttons() -> void:
 	if close_button != null and not close_button.pressed.is_connected(_on_close_pressed):
 		close_button.pressed.connect(_on_close_pressed)
@@ -89,8 +88,6 @@ func _apply_user(user: Dictionary) -> void:
 				profile_pic.texture = load("res://graphics/ui/16px/user_guest.png")
 	if edit_button != null:
 		edit_button.visible = _is_me(user)
-		
-
 
 func _format_date(value: String) -> String:
 	if value == "":

@@ -3,20 +3,29 @@ extends Control
 
 signal changed
 
+@export var size_x = 16
+@export var size_y = 16
+@export var code_len = 256
 var palette: Array = []
 var pixels := PackedInt32Array()
 var active_index := 0
 var draw_grid := true
+var _allowed_indices: Dictionary = {}
 
 func _ready() -> void:
 	if palette.is_empty():
-		palette = Palatte.new().colors
+		palette = Palatte.new().colors_64
 	_ensure_pixels()
 	queue_redraw()
 
 func set_palette(colors: Array) -> void:
 	palette = colors
 	queue_redraw()
+
+func set_allowed_indices(indices: PackedInt32Array) -> void:
+	_allowed_indices.clear()
+	for idx in indices:
+		_allowed_indices[int(idx)] = true
 
 func set_pixels(indices: PackedInt32Array) -> void:
 	pixels = indices
@@ -28,6 +37,8 @@ func get_pixels() -> PackedInt32Array:
 
 func set_active_index(index: int) -> void:
 	active_index = clampi(index, 0, palette.size() - 1)
+	if not _is_index_allowed(active_index):
+		active_index = _find_first_allowed()
 
 func clear(index: int = 0) -> void:
 	_ensure_pixels()
@@ -37,9 +48,9 @@ func clear(index: int = 0) -> void:
 	changed.emit()
 
 func _ensure_pixels() -> void:
-	if pixels.size() != Game.PROFILE_CODE_LEN:
+	if pixels.size() != code_len:
 		pixels = PackedInt32Array()
-		pixels.resize(Game.PROFILE_CODE_LEN)
+		pixels.resize(code_len)
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -59,10 +70,12 @@ func _paint_at(pos: Vector2) -> void:
 		return
 	var x := int(floor(pos.x / cell))
 	var y := int(floor(pos.y / cell))
-	if x < 0 or y < 0 or x >= Game.PROFILE_SIZE or y >= Game.PROFILE_SIZE:
+	if x < 0 or y < 0 or x >= size_x or y >= size_y:
 		return
-	var idx := y * Game.PROFILE_SIZE + x
+	var idx = y * size_x + x
 	if idx < 0 or idx >= pixels.size():
+		return
+	if not _is_index_allowed(active_index):
 		return
 	if pixels[idx] == active_index:
 		return
@@ -71,8 +84,8 @@ func _paint_at(pos: Vector2) -> void:
 	changed.emit()
 
 func _cell_size() -> float:
-	var cell_x := size.x / float(Game.PROFILE_SIZE)
-	var cell_y := size.y / float(Game.PROFILE_SIZE)
+	var cell_x := size.x / float(size_x)
+	var cell_y := size.y / float(size_y)
 	return min(cell_x, cell_y)
 
 func _draw() -> void:
@@ -80,9 +93,9 @@ func _draw() -> void:
 		return
 	var cell := _cell_size()
 	var idx := 0
-	for y in range(Game.PROFILE_SIZE):
-		for x in range(Game.PROFILE_SIZE):
-			var color_index := int(pixels[idx])
+	for y in range(size_y):
+		for x in range(size_x):
+			var color_index = int(pixels[idx])
 			if color_index < 0 or color_index >= palette.size():
 				color_index = 0
 			var color: Color = palette[color_index]
@@ -90,3 +103,15 @@ func _draw() -> void:
 			if draw_grid:
 				draw_rect(Rect2(Vector2(x * cell, y * cell), Vector2(cell, cell)), Color(0, 0, 0, 0.15), false, 1.0)
 			idx += 1
+
+func _is_index_allowed(index: int) -> bool:
+	if _allowed_indices.is_empty():
+		return true
+	return _allowed_indices.has(index)
+
+func _find_first_allowed() -> int:
+	if _allowed_indices.is_empty():
+		return 0
+	for key in _allowed_indices.keys():
+		return int(key)
+	return 0

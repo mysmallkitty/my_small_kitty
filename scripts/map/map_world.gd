@@ -91,7 +91,8 @@ func _process(delta: float) -> void:
 func _physics_process(_delta):
 	if _map_cleared:
 		return
-	_cleartime += 1
+	if player:
+		_cleartime += 1
 	_clear_time_label.text = Game._format_ticks(_cleartime)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -101,6 +102,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("ui_cancel"):
 		_toggle_pause()
+	if event.is_action_pressed("key_reload"):
+		_on_pause_restart()
 
 func _draw() -> void:
 	if not debug_draw_chunks or map_data == null:
@@ -163,6 +166,7 @@ func _spawn_player() -> void:
 	_clear_chat_container(player)
 	player.signal_damaged.connect(_respawn)
 	player.signal_complete.connect(_on_map_cleared)
+	_apply_local_player_sprite()
 	var spawn_chunk := _get_start_chunk()
 	current_chunk = spawn_chunk
 	player.global_position = _spawn_position()
@@ -474,6 +478,7 @@ func _replace_player(respawn_pos: Vector2, used_checkpoint: bool) -> void:
 	player.z_index = 10
 	player.signal_damaged.connect(_respawn)
 	player.signal_complete.connect(_on_map_cleared)
+	_apply_local_player_sprite()
 	player.global_position = respawn_pos
 	player.velocity = Vector2.ZERO
 	if used_checkpoint:
@@ -772,11 +777,31 @@ func _do_fetch_user_name(user_id: String) -> void:
 	if result.get("ok", false) and typeof(result.get("data", null)) == TYPE_DICTIONARY:
 		var data: Dictionary = result.get("data", {})
 		_name = str(data.get("username", data.get("name", _name)))
+		var sprite_code := str(data.get("player_sprite", ""))
+		var g = ghosts.get(uid, null)
+		if g != null and g.has_method("set_sprite_texture"):
+			g.set_sprite_texture(Game.get_player_texture(sprite_code))
 	_name_cache[uid] = _name
 	_name_fetching.erase(uid)
 	var g = ghosts.get(uid, null)
 	if g != null:
 		g.set_nickname(_name)
+
+func _apply_local_player_sprite() -> void:
+	if player == null:
+		return
+	var me = ApiClient.me
+	if typeof(me) != TYPE_DICTIONARY:
+		return
+	var data: Dictionary = {}
+	if me.has("data") and typeof(me.get("data", null)) == TYPE_DICTIONARY:
+		data = me.get("data", {})
+	else:
+		data = me
+	var sprite_code := str(data.get("player_sprite", ""))
+	var tex := Game.get_player_texture(sprite_code)
+	if tex != null and player.has_method("set_sprite_texture"):
+		player.set_sprite_texture(tex)
 
 func _cached_name(user_id: String) -> String:
 	var uid := _normalize_user_id(user_id)

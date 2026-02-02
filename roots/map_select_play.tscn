@@ -1,4 +1,4 @@
-[gd_scene load_steps=18 format=3 uid="uid://cnsqe50msj4di"]
+[gd_scene load_steps=19 format=3 uid="uid://cnsqe50msj4di"]
 
 [ext_resource type="PackedScene" uid="uid://cfcvro2mtr04v" path="res://ui/panels/profile_panel.tscn" id="1_6g5u2"]
 [ext_resource type="Texture2D" uid="uid://c0kfoeksewc0g" path="res://graphics/backgrounds/mountain.png" id="1_qo68t"]
@@ -15,6 +15,7 @@
 [ext_resource type="PackedScene" uid="uid://dl7caoqabrnib" path="res://ui/panels/auth_panel.tscn" id="9_auth"]
 [ext_resource type="PackedScene" uid="uid://bpfpfirn2b13r" path="res://ui/panels/user_profile_detail.tscn" id="10_profile"]
 [ext_resource type="PackedScene" uid="uid://c68csufdvmyo7" path="res://ui/panels/profile_edit.tscn" id="11_profile_edit"]
+[ext_resource type="PackedScene" uid="uid://d0qj8b6jv0t3p" path="res://ui/panels/player_sprite_edit.tscn" id="12_player_edit"]
 [ext_resource type="Script" uid="uid://badwokxjuf5j2" path="res://scripts/map/select/panels/map_select_stats_panel.gd" id="12_onqqg"]
 [ext_resource type="Script" uid="uid://cpqpywwb0u23o" path="res://scripts/map/select/panels/map_select_leaderboard_panel.gd" id="14_1uai0"]
 [ext_resource type="PackedScene" uid="uid://bieb7jdjy37ny" path="res://ui/panels/record_row.tscn" id="15_tfhxb"]
@@ -126,6 +127,16 @@ dim_path = NodePath("../Dim")
 
 [node name="ProfileEdit" parent="UI" instance=ExtResource("11_profile_edit")]
 visible = false
-offset_left = 8.0
-offset_top = 20.0
+offset_left = -9.0
+offset_top = 12.0
+offset_right = 225.0
+offset_bottom = 162.0
+dim_path = NodePath("../Dim")
+
+[node name="PlayerSpriteEdit" parent="UI" instance=ExtResource("12_player_edit")]
+visible = false
+offset_left = -9.0
+offset_top = 12.0
+offset_right = 225.0
+offset_bottom = 162.0
 dim_path = NodePath("../Dim")
